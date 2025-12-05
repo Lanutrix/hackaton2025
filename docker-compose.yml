@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # FastAPI application
+  app:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  # PostgreSQL database
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-fastapi_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# Named volumes
+volumes:
+  postgres_data:
+
+# Networks
+networks:
+  app_network:
+    driver: bridge
+
