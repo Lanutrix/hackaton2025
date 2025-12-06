@@ -13,8 +13,8 @@ const RecognitionChoicePage = () => {
 
   const handleSelect = (id: string) => {
     setSelected((prev) => (prev === id ? null : id));
-    if (id === "barcode") navigate("/barcode-scan");
-    else if (id === "photo") navigate("/barcode");
+    if (id === "barcode") navigate("/barcode");
+    else if (id === "photo") navigate("/photo-analyze");
     else navigate("/");
   };
 

@@ -6,6 +6,7 @@ import SortingQuizPage from "./pages/SortingQuizPage";
 import WasteCategoriesPage from "./pages/WasteCategoriesPage";
 import AuthPage from "./pages/AuthPage";
 import RecognitionChoicePage from "./pages/RecognitionChoicePage";
+import PhotoAnalyzePage from "./pages/PhotoAnalyzePage";
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
       <Route path="/" element={<Navigate to="/landing-forest" replace />} />
       <Route path="/landing-forest" element={<LandingForestPage />} />
       <Route path="/barcode" element={<BarcodeCapturePage />} />
+      <Route path="/photo-analyze" element={<PhotoAnalyzePage />} />
       <Route path="/barcode-scan" element={<BarcodeScanPage />} />
       <Route path="/sorting-quiz" element={<SortingQuizPage />} />
       <Route path="/waste-categories" element={<WasteCategoriesPage />} />

@@ -48,4 +48,16 @@ export async function apiDetectBarcode(file: File) {
   return handleResponse<{ barcode: string }>(res);
 }
 
+export async function apiAnalyzeWaste(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/analyze_waste`, {
+    method: "POST",
+    body: formData,
+  });
+
+  return handleResponse<unknown>(res);
+}
+
 export { API_BASE };

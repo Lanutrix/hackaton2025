@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   apiDisposalInstructions,
   apiParseBarcode,
@@ -8,9 +8,17 @@ import {
 } from "../api";
 
 type ParsedData = Record<string, unknown> | string | null;
+type NavState = {
+  barcode?: string;
+  result?: ParsedData;
+  waste?: ParsedData;
+  instructions?: Record<string, string> | null;
+  productName?: string | null;
+};
 
 const BarcodeScanPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   const [barcode, setBarcode] = useState("");
@@ -28,6 +36,8 @@ const BarcodeScanPage = () => {
 
   const [fallbackUsed, setFallbackUsed] = useState(false);
 
+  const navState = (location.state as NavState | null) ?? null;
+
   const wasteEntries = useMemo(() => {
     if (!waste || typeof waste !== "object") return null;
     const entries = Object.entries(waste as Record<string, unknown>).filter(
@@ -42,7 +52,7 @@ const BarcodeScanPage = () => {
   }, [instructions]);
 
   useEffect(() => {
-    if (!productName) return;
+    if (!productName || navState?.waste) return;
     const fetchWaste = async () => {
       setWasteLoading(true);
       setError(null);
@@ -57,7 +67,7 @@ const BarcodeScanPage = () => {
       }
     };
     void fetchWaste();
-  }, [productName]);
+  }, [productName, navState]);
 
   useEffect(() => {
     if (!productName) return;
@@ -91,15 +101,43 @@ const BarcodeScanPage = () => {
   }, [productName, wasteEntries, instructions, instructionsLoading]);
 
   useEffect(() => {
+    if (!navState) return;
+
+    if (navState.barcode) {
+      setBarcode(navState.barcode);
+    }
+
+    if (navState.waste !== undefined) {
+      setWaste(navState.waste);
+    }
+
+    if (navState.instructions !== undefined) {
+      setInstructions(navState.instructions ?? null);
+    }
+
+    if (navState.result !== undefined && navState.result !== null) {
+      setResult(navState.result);
+      const name = deriveName(navState.result);
+      if (name) {
+        setProductName(name);
+      }
+    }
+
+    if (navState.productName) {
+      setProductName(navState.productName);
+    }
+  }, [navState]);
+
+  useEffect(() => {
     const initialBarcode = searchParams.get("barcode");
     if (!initialBarcode) return;
     if (initialBarcode !== barcode) {
       setBarcode(initialBarcode);
     }
-    if (initialBarcode.trim().length >= 6) {
+    if (initialBarcode.trim().length >= 6 && !(navState && navState.result)) {
       void processBarcode(initialBarcode);
     }
-  }, [searchParams]);
+  }, [searchParams, barcode, navState]);
 
   const deriveName = (data: ParsedData) => {
     if (typeof data === "string") return data;
@@ -124,7 +162,10 @@ const BarcodeScanPage = () => {
     setFallbackUsed(false);
     let usedFallback = false;
     try {
-      let data = (await apiParseBarcode(code.trim())) as ParsedData;
+      let data =
+        navState?.barcode === code.trim() && navState.result !== undefined
+          ? navState.result
+          : ((await apiParseBarcode(code.trim())) as ParsedData);
 
       if (data === null) {
         usedFallback = true;
