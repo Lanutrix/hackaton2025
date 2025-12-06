@@ -5,6 +5,7 @@ from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
 from src.utils.barcode.parse_barcode import init_barcode, shutdown_barcode
 from src.utils.barcode.product_waste_analyzer import init_product_waste_analyzer, shutdown_product_waste_analyzer
+from src.utils.barcode.disposal_instructions import init_disposal_instructions, shutdown_disposal_instructions
 
 app = FastAPI(
     title="FastAPI Application",
@@ -35,6 +36,8 @@ async def startup_event():
     print("Barcode parser initialized")
     await init_product_waste_analyzer()
     print("Product waste analyzer initialized")
+    await init_disposal_instructions()
+    print("Disposal instructions generator initialized")
     print("Application started")
 
 @app.on_event("shutdown")
@@ -44,6 +47,8 @@ async def shutdown_event():
     print("Barcode parser shutdown")
     await shutdown_product_waste_analyzer()
     print("Product waste analyzer shutdown")
+    await shutdown_disposal_instructions()
+    print("Disposal instructions generator shutdown")
     
 if __name__ == "__main__":
     import uvicorn
