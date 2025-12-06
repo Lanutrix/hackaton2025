@@ -1,6 +1,7 @@
 import base64
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from src.utils.image_processing import analyze_waste, detect_barcode
+from src.utils.client_ip import get_client_ip
 
 router = APIRouter(
     tags=["image"]
@@ -8,7 +9,7 @@ router = APIRouter(
 
 
 @router.post("/analyze_waste")
-async def analyze_waste_route(file: UploadFile = File(...)):
+async def analyze_waste_route(request: Request, file: UploadFile = File(...)):
     """
     Анализирует фото мусора и возвращает компоненты + инструкцию по утилизации.
     
@@ -17,7 +18,6 @@ async def analyze_waste_route(file: UploadFile = File(...)):
     - params: компоненты и их типы отходов
     - steps: пошаговая инструкция по утилизации
     """
-    # Проверяем тип файла
     allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:
         raise HTTPException(
@@ -25,12 +25,11 @@ async def analyze_waste_route(file: UploadFile = File(...)):
             detail=f"Неподдерживаемый тип файла: {file.content_type}. Разрешены: {', '.join(allowed_types)}"
         )
     
-    # Читаем файл и конвертируем в base64
     contents = await file.read()
     image_base64 = base64.b64encode(contents).decode("utf-8")
     
-    # Анализируем изображение
-    result = await analyze_waste(image_base64)
+    client_ip = get_client_ip(request)
+    result = await analyze_waste(image_base64, client_ip)
     
     if not result["success"]:
         raise HTTPException(
@@ -42,7 +41,7 @@ async def analyze_waste_route(file: UploadFile = File(...)):
 
 
 @router.post("/detect_barcode")
-async def detect_barcode_route(file: UploadFile = File(...)):
+async def detect_barcode_route(request: Request, file: UploadFile = File(...)):
     """
     Распознаёт штрихкод на фото и возвращает его номер.
     
@@ -55,7 +54,6 @@ async def detect_barcode_route(file: UploadFile = File(...)):
     - 404: Штрихкод не найден (BARCODE_NOT_FOUND)
     - 500: Ошибка обработки изображения
     """
-    # Проверяем тип файла
     allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:
         raise HTTPException(
@@ -66,15 +64,13 @@ async def detect_barcode_route(file: UploadFile = File(...)):
             }
         )
     
-    # Читаем файл и конвертируем в base64
     contents = await file.read()
     image_base64 = base64.b64encode(contents).decode("utf-8")
     
-    # Распознаём штрихкод
-    result = await detect_barcode(image_base64)
+    client_ip = get_client_ip(request)
+    result = await detect_barcode(image_base64, client_ip)
     
     if not result["success"]:
-        # Штрихкод не найден — 404
         raise HTTPException(
             status_code=404,
             detail={
@@ -84,4 +80,3 @@ async def detect_barcode_route(file: UploadFile = File(...)):
         )
     
     return {"barcode": result["barcode"]}
-

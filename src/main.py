@@ -7,7 +7,6 @@ from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
 from src.routers import image as image_router
 from src.utils.barcode.parse_barcode import init_barcode, shutdown_barcode
-from src.utils.image_processing import init_image_processor, shutdown_image_processor
 from src.utils.api import init_openai_client, shutdown_openai_client, init_rate_limiter
 
 app = FastAPI(
@@ -48,8 +47,6 @@ async def startup_event():
     await init_barcode()
     print("Barcode parser initialized")
     
-    await init_image_processor()
-    print("Image processor initialized")
     print("Application started")
 
 @app.on_event("shutdown")
@@ -58,9 +55,6 @@ async def shutdown_event():
     
     await shutdown_barcode()
     print("Barcode parser shutdown")
-    
-    await shutdown_image_processor()
-    print("Image processor shutdown")
     
     await shutdown_openai_client()
     print("OpenAI client shutdown")

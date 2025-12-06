@@ -29,9 +29,10 @@ class OpenAIClientInterface(ABC):
     async def chat_completion(
         self,
         client_ip: str,
-        messages: List[Dict[str, str]],
+        messages: List[Dict[str, Any]],
         model: str = "gpt-4o-mini-2024-07-18",
-        temperature: float = 0.3
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None
     ) -> str:
         """Выполнение chat completion запроса"""
         pass
@@ -46,6 +47,20 @@ class OpenAIClientInterface(ABC):
         search_context_size: str = "high"
     ) -> str:
         """Выполнение запроса с веб-поиском"""
+        pass
+    
+    @abstractmethod
+    async def vision(
+        self,
+        client_ip: str,
+        prompt: str,
+        image_base64: str,
+        model: str = "gpt-4o-mini-2024-07-18",
+        temperature: float = 0.3,
+        max_tokens: int = 1024,
+        detail: str = "auto"
+    ) -> str:
+        """Выполнение запроса с изображением"""
         pass
 
 
@@ -83,9 +98,10 @@ class RateLimitedOpenAIClient(OpenAIClientInterface):
     async def chat_completion(
         self,
         client_ip: str,
-        messages: List[Dict[str, str]],
+        messages: List[Dict[str, Any]],
         model: str = "gpt-4o-mini-2024-07-18",
-        temperature: float = 0.3
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None
     ) -> str:
         """
         Выполнение chat completion запроса с rate limiting.
@@ -95,20 +111,24 @@ class RateLimitedOpenAIClient(OpenAIClientInterface):
             messages: Список сообщений для API
             model: Модель OpenAI
             temperature: Температура генерации
+            max_tokens: Максимальное количество токенов (опционально)
             
         Returns:
             Текст ответа от API
         """
-        # Ждём разрешения от rate limiter
         await self._rate_limiter.wait_and_acquire(client_ip)
         
         client = await self._ensure_client()
         
-        response = await client.chat.completions.create(
-            model=model,
-            temperature=temperature,
-            messages=messages
-        )
+        kwargs = {
+            "model": model,
+            "temperature": temperature,
+            "messages": messages
+        }
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        
+        response = await client.chat.completions.create(**kwargs)
         
         return response.choices[0].message.content.strip()
     
@@ -133,7 +153,6 @@ class RateLimitedOpenAIClient(OpenAIClientInterface):
         Returns:
             Текст ответа от API
         """
-        # Ждём разрешения от rate limiter
         await self._rate_limiter.wait_and_acquire(client_ip)
         
         client = await self._ensure_client()
@@ -149,6 +168,72 @@ class RateLimitedOpenAIClient(OpenAIClientInterface):
         )
         
         return response.output_text.strip()
+    
+    async def vision(
+        self,
+        client_ip: str,
+        prompt: str,
+        image_base64: str,
+        model: str = "gpt-4o-mini-2024-07-18",
+        temperature: float = 0.3,
+        max_tokens: int = 1024,
+        detail: str = "auto"
+    ) -> str:
+        """
+        Выполнение запроса с изображением и rate limiting.
+        
+        Args:
+            client_ip: IP адрес клиента для rate limiting
+            prompt: Текст запроса
+            image_base64: Изображение в формате base64
+            model: Модель OpenAI
+            temperature: Температура генерации
+            max_tokens: Максимальное количество токенов
+            detail: Уровень детализации (low, high, auto)
+            
+        Returns:
+            Текст ответа от API
+        """
+        await self._rate_limiter.wait_and_acquire(client_ip)
+        
+        client = await self._ensure_client()
+        
+        # Определяем тип изображения
+        if image_base64.startswith("/9j/"):
+            media_type = "image/jpeg"
+        elif image_base64.startswith("iVBORw"):
+            media_type = "image/png"
+        elif image_base64.startswith("R0lGOD"):
+            media_type = "image/gif"
+        elif image_base64.startswith("UklGR"):
+            media_type = "image/webp"
+        else:
+            media_type = "image/jpeg"
+        
+        image_url = f"data:{media_type};base64,{image_base64}"
+        
+        response = await client.chat.completions.create(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_url,
+                                "detail": detail
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+        
+        return response.choices[0].message.content.strip()
 
 
 # Singleton экземпляр клиента
@@ -174,4 +259,3 @@ def get_openai_client() -> RateLimitedOpenAIClient:
     if _openai_client is None:
         raise RuntimeError("OpenAI client not initialized. Call init_openai_client() first.")
     return _openai_client
-

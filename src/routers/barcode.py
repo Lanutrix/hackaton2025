@@ -1,11 +1,12 @@
 import json
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from typing import Dict
 from src.utils.barcode.parse_barcode import parse_barcode
 from src.utils.barcode.barcode_llm import parse_barcode_llm
 from src.utils.barcode.product_waste_analyzer import parse_waste_with_web_search
 from src.utils.barcode.disposal_instructions import generate_disposal_instructions
+from src.utils.client_ip import get_client_ip
 
 router = APIRouter(
     tags=["barcode"]
@@ -13,25 +14,6 @@ router = APIRouter(
 
 # Кэш для инструкций по утилизации
 _disposal_cache: Dict[str, dict] = {}
-
-
-def get_client_ip(request: Request) -> str:
-    """Получение IP адреса клиента"""
-    # Проверяем заголовки прокси
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        # Берём первый IP из списка
-        return forwarded.split(",")[0].strip()
-    
-    real_ip = request.headers.get("X-Real-IP")
-    if real_ip:
-        return real_ip
-    
-    # Fallback на client host
-    if request.client:
-        return request.client.host
-    
-    return "unknown"
 
 
 class ProductDescRequest(BaseModel):

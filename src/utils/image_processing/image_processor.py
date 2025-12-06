@@ -1,18 +1,17 @@
-import os
+"""
+Обработчик изображений для анализа мусора.
+
+Single Responsibility: Только логика обработки изображений
+Dependency Inversion: Зависит от абстракции OpenAIClientInterface
+"""
 import asyncio
 import json
+import re
 import hashlib
 from typing import Any, Dict, Optional
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
 
-load_dotenv()
+from src.utils.api import get_openai_client
 
-API_KEY = os.getenv("OPENAI_API_KEY")
-BASE_URL = "https://api.proxyapi.ru/openai/v1"
-
-if API_KEY is None:
-    raise RuntimeError("OPENAI_API_KEY is not set in the environment")
 
 # Системный промпт для анализа изображений мусора
 WASTE_ANALYSIS_PROMPT = """Ты эксперт по сортировке и утилизации отходов в России.
@@ -77,39 +76,22 @@ NOT_FOUND
 
 
 class ImageProcessor:
-    """Универсальный асинхронный класс для обработки изображений с помощью GPT-4o Vision."""
+    """Процессор изображений для анализа мусора"""
     
-    def __init__(self, max_concurrent_requests: int = 1):
-        """
-        Инициализация процессора изображений.
-        
-        Args:
-            max_concurrent_requests: Максимальное количество одновременных запросов
-        """
-        self.client: Optional[AsyncOpenAI] = None
-        self._semaphore = asyncio.Semaphore(max_concurrent_requests)
+    def __init__(self):
         self._cache: Dict[str, Any] = {}
-    
-    async def _ensure_client(self):
-        """Создает клиент OpenAI, если он еще не создан."""
-        if self.client is None:
-            self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
-    
-    async def close(self):
-        """Закрывает клиент и освобождает ресурсы."""
-        if self.client:
-            await self.client.close()
-            self.client = None
+        self._cache_lock = asyncio.Lock()
     
     def _generate_cache_key(self, prompt: str, image_base64: str) -> str:
-        """Генерирует ключ кэша из промпта и хэша изображения."""
+        """Генерирует ключ кэша из промпта и хэша изображения"""
         image_hash = hashlib.md5(image_base64.encode()).hexdigest()
-        return f"{prompt}:{image_hash}"
+        return f"{prompt[:50]}:{image_hash}"
     
     async def process_image(
         self,
         prompt: str,
         image_base64: str,
+        client_ip: str,
         detail: str = "auto",
         max_tokens: int = 1024,
         temperature: float = 0.3,
@@ -120,82 +102,41 @@ class ImageProcessor:
         
         Args:
             prompt: Текстовый промпт для анализа изображения
-            image_base64: Изображение в формате base64 (без префикса data:image/...)
-            detail: Уровень детализации ("low", "high", "auto")
+            image_base64: Изображение в формате base64
+            client_ip: IP адрес клиента для rate limiting
+            detail: Уровень детализации (low, high, auto)
             max_tokens: Максимальное количество токенов в ответе
-            temperature: Температура генерации (0.0 - 2.0)
-            use_cache: Использовать ли кэширование результатов
+            temperature: Температура генерации
+            use_cache: Использовать кэширование
         
         Returns:
-            Dict с результатом обработки:
-            - success: True если успешно
-            - content: Текстовый ответ модели
-            - error: Описание ошибки (если success=False)
+            Dict с результатом обработки
         """
-        # Проверяем кэш
         cache_key = self._generate_cache_key(prompt, image_base64)
+        
         if use_cache and cache_key in self._cache:
             return self._cache[cache_key]
         
-        # Выполняем запрос с ограничением параллелизма
-        async with self._semaphore:
-            await self._ensure_client()
+        async with self._cache_lock:
+            if use_cache and cache_key in self._cache:
+                return self._cache[cache_key]
             
             try:
-                # Определяем тип изображения (по умолчанию jpeg)
-                if image_base64.startswith("/9j/"):
-                    media_type = "image/jpeg"
-                elif image_base64.startswith("iVBORw"):
-                    media_type = "image/png"
-                elif image_base64.startswith("R0lGOD"):
-                    media_type = "image/gif"
-                elif image_base64.startswith("UklGR"):
-                    media_type = "image/webp"
-                else:
-                    media_type = "image/jpeg"
-                
-                # Формируем data URL
-                image_url = f"data:{media_type};base64,{image_base64}"
-                
-                response = await self.client.chat.completions.create(
-                    model="gpt-4o",
+                client = get_openai_client()
+                content = await client.vision(
+                    client_ip=client_ip,
+                    prompt=prompt,
+                    image_base64=image_base64,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": prompt
-                                },
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": image_url,
-                                        "detail": detail
-                                    }
-                                }
-                            ]
-                        }
-                    ]
+                    detail=detail
                 )
                 
-                content = response.choices[0].message.content.strip()
-                result = {
-                    "success": True,
-                    "content": content
-                }
+                result = {"success": True, "content": content}
                 
             except Exception as e:
-                result = {
-                    "success": False,
-                    "error": f"Ошибка обработки изображения: {str(e)}"
-                }
+                result = {"success": False, "error": f"Ошибка обработки изображения: {str(e)}"}
             
-            await asyncio.sleep(0.1)  # Задержка между запросами
-            
-            # Сохраняем в кэш
             if use_cache:
                 self._cache[cache_key] = result
             
@@ -205,6 +146,7 @@ class ImageProcessor:
         self,
         prompt: str,
         image_base64: str,
+        client_ip: str,
         detail: str = "auto",
         max_tokens: int = 1024,
         temperature: float = 0.3,
@@ -212,25 +154,11 @@ class ImageProcessor:
     ) -> Dict[str, Any]:
         """
         Обрабатывает изображение и парсит ответ как JSON.
-        
-        Args:
-            prompt: Текстовый промпт (должен требовать JSON ответ)
-            image_base64: Изображение в формате base64
-            detail: Уровень детализации
-            max_tokens: Максимальное количество токенов
-            temperature: Температура генерации
-            use_cache: Использовать кэширование
-        
-        Returns:
-            Dict с результатом:
-            - success: True если успешно
-            - data: Распарсенный JSON
-            - error: Описание ошибки (если success=False)
-            - raw_content: Сырой ответ (если не удалось распарсить JSON)
         """
         result = await self.process_image(
             prompt=prompt,
             image_base64=image_base64,
+            client_ip=client_ip,
             detail=detail,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -243,12 +171,10 @@ class ImageProcessor:
         content = result["content"]
         
         try:
-            # Пробуем парсить как JSON напрямую
             data = json.loads(content)
             return {"success": True, "data": data}
         except json.JSONDecodeError:
             # Пробуем извлечь JSON из markdown блока
-            import re
             json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', content)
             if json_match:
                 try:
@@ -275,27 +201,19 @@ class ImageProcessor:
     async def detect_barcode(
         self,
         image_base64: str,
+        client_ip: str,
         use_cache: bool = True
     ) -> Dict[str, Any]:
         """
-        Распознаёт штрихкод на изображении и возвращает его номер.
-        
-        Args:
-            image_base64: Изображение в формате base64
-            use_cache: Использовать кэширование
-        
-        Returns:
-            Dict с результатом:
-            - success: True если штрихкод найден
-            - barcode: Номер штрихкода (строка цифр)
-            - error: Описание ошибки (если success=False)
+        Распознаёт штрихкод на изображении.
         """
         result = await self.process_image(
             prompt=BARCODE_DETECTION_PROMPT,
             image_base64=image_base64,
-            detail="low",  # Минимальная детализация
-            max_tokens=64,  # Короткий ответ
-            temperature=0.1,  # Минимальная вариативность
+            client_ip=client_ip,
+            detail="low",
+            max_tokens=64,
+            temperature=0.1,
             use_cache=use_cache
         )
         
@@ -304,15 +222,10 @@ class ImageProcessor:
         
         content = result["content"].strip()
         
-        # Проверяем, найден ли штрихкод
         if content == "NOT_FOUND" or not content:
-            return {
-                "success": False,
-                "error": "Штрихкод не найден на изображении"
-            }
+            return {"success": False, "error": "Штрихкод не найден на изображении"}
         
         # Извлекаем только цифры
-        import re
         digits = re.sub(r'\D', '', content)
         
         if not digits:
@@ -322,173 +235,78 @@ class ImageProcessor:
                 "raw_content": content
             }
         
-        return {
-            "success": True,
-            "barcode": digits
-        }
+        return {"success": True, "barcode": digits}
     
     async def analyze_waste(
         self,
         image_base64: str,
+        client_ip: str,
         detail: str = "high",
         use_cache: bool = True
     ) -> Dict[str, Any]:
         """
-        Анализирует изображение мусора и возвращает компоненты + инструкцию по утилизации.
-        
-        Args:
-            image_base64: Изображение в формате base64
-            detail: Уровень детализации ("low", "high", "auto")
-            use_cache: Использовать кэширование
-        
-        Returns:
-            Dict с результатом:
-            - success: True если успешно
-            - data: {
-                "params": {"компонент": "тип отхода", ...},
-                "steps": {"1": "шаг 1", "2": "шаг 2", ...}
-              }
-            - error: Описание ошибки (если success=False)
+        Анализирует изображение мусора.
         """
         return await self.process_image_json(
             prompt=WASTE_ANALYSIS_PROMPT,
             image_base64=image_base64,
+            client_ip=client_ip,
             detail=detail,
             max_tokens=1024,
             temperature=0.1,
             use_cache=use_cache
         )
+    
+    def clear_cache(self) -> None:
+        """Очистка кэша"""
+        self._cache.clear()
 
 
-# Глобальный экземпляр процессора
+# Singleton экземпляр (ленивая инициализация)
 _image_processor: Optional[ImageProcessor] = None
 
 
-async def init_image_processor(max_concurrent_requests: int = 1):
-    """Инициализирует глобальный процессор изображений."""
+def _get_processor() -> ImageProcessor:
+    """Получение или создание процессора"""
     global _image_processor
-    _image_processor = ImageProcessor(max_concurrent_requests=max_concurrent_requests)
-
-
-async def shutdown_image_processor():
-    """Закрывает глобальный процессор изображений."""
-    global _image_processor
-    if _image_processor:
-        await _image_processor.close()
-    _image_processor = None
-
-
-async def process_image(prompt: str, image_base64: str, **kwargs) -> Dict[str, Any]:
-    """
-    Обрабатывает изображение с заданным промптом (использует глобальный процессор).
-    
-    Args:
-        prompt: Текстовый промпт для анализа
-        image_base64: Изображение в формате base64
-        **kwargs: Дополнительные параметры (detail, max_tokens, temperature, use_cache)
-    
-    Returns:
-        Dict с результатом обработки
-    """
     if _image_processor is None:
-        raise RuntimeError("ImageProcessor не инициализирован. Вызовите init_image_processor()")
-    return await _image_processor.process_image(prompt, image_base64, **kwargs)
+        _image_processor = ImageProcessor()
+    return _image_processor
 
 
-async def process_image_json(prompt: str, image_base64: str, **kwargs) -> Dict[str, Any]:
-    """
-    Обрабатывает изображение и возвращает результат как JSON.
-    
-    Args:
-        prompt: Текстовый промпт (должен требовать JSON ответ)
-        image_base64: Изображение в формате base64
-        **kwargs: Дополнительные параметры
-    
-    Returns:
-        Dict с распарсенным JSON
-    """
-    if _image_processor is None:
-        raise RuntimeError("ImageProcessor не инициализирован. Вызовите init_image_processor()")
-    return await _image_processor.process_image_json(prompt, image_base64, **kwargs)
+async def process_image(
+    prompt: str, 
+    image_base64: str, 
+    client_ip: str = "default",
+    **kwargs
+) -> Dict[str, Any]:
+    """Обрабатывает изображение с заданным промптом."""
+    return await _get_processor().process_image(prompt, image_base64, client_ip, **kwargs)
 
 
-async def analyze_waste(image_base64: str, **kwargs) -> Dict[str, Any]:
-    """
-    Анализирует фото мусора: определяет компоненты и даёт инструкцию по утилизации.
-    
-    Args:
-        image_base64: Изображение в формате base64
-        **kwargs: Дополнительные параметры (detail, use_cache)
-    
-    Returns:
-        Dict с результатом:
-        - success: True если успешно
-        - data: {
-            "params": {"компонент": "тип отхода", ...},
-            "steps": {"1": "шаг 1", ...}
-          }
-    """
-    if _image_processor is None:
-        raise RuntimeError("ImageProcessor не инициализирован. Вызовите init_image_processor()")
-    return await _image_processor.analyze_waste(image_base64, **kwargs)
+async def process_image_json(
+    prompt: str, 
+    image_base64: str, 
+    client_ip: str = "default",
+    **kwargs
+) -> Dict[str, Any]:
+    """Обрабатывает изображение и возвращает результат как JSON."""
+    return await _get_processor().process_image_json(prompt, image_base64, client_ip, **kwargs)
 
 
-async def detect_barcode(image_base64: str, **kwargs) -> Dict[str, Any]:
-    """
-    Распознаёт штрихкод на фото и возвращает его номер.
-    
-    Args:
-        image_base64: Изображение в формате base64
-        **kwargs: Дополнительные параметры (use_cache)
-    
-    Returns:
-        Dict с результатом:
-        - success: True если штрихкод найден
-        - barcode: Номер штрихкода (строка цифр)
-        - error: Описание ошибки (если success=False)
-    """
-    if _image_processor is None:
-        raise RuntimeError("ImageProcessor не инициализирован. Вызовите init_image_processor()")
-    return await _image_processor.detect_barcode(image_base64, **kwargs)
+async def analyze_waste(
+    image_base64: str, 
+    client_ip: str = "default",
+    **kwargs
+) -> Dict[str, Any]:
+    """Анализирует фото мусора."""
+    return await _get_processor().analyze_waste(image_base64, client_ip, **kwargs)
 
 
-# Пример использования
-if __name__ == "__main__":
-    import base64
-    
-    async def main():
-        await init_image_processor()
-        
-        try:
-            # Пример: загрузка изображения и обработка
-            # image_path = "test_image.jpg"
-            # with open(image_path, "rb") as f:
-            #     image_base64 = base64.b64encode(f.read()).decode("utf-8")
-            
-            # Заглушка для теста
-            image_base64 = "placeholder_base64_string"
-            
-            print("📷 Анализ изображения мусора...")
-            
-            # Используем специализированную функцию для анализа мусора
-            result = await analyze_waste(image_base64)
-            
-            if result["success"]:
-                data = result["data"]
-                print("\n🔧 Компоненты:")
-                for component, waste_type in data.get("params", {}).items():
-                    print(f"   • {component}: {waste_type}")
-                
-                print("\n📋 Инструкция по утилизации:")
-                for step_num, action in data.get("steps", {}).items():
-                    print(f"   {step_num}. {action}")
-            else:
-                print(f"❌ Ошибка: {result.get('error')}")
-                if "raw_content" in result:
-                    print(f"   Сырой ответ: {result['raw_content']}")
-                
-        finally:
-            await shutdown_image_processor()
-    
-    asyncio.run(main())
-
+async def detect_barcode(
+    image_base64: str, 
+    client_ip: str = "default",
+    **kwargs
+) -> Dict[str, Any]:
+    """Распознаёт штрихкод на фото."""
+    return await _get_processor().detect_barcode(image_base64, client_ip, **kwargs)
