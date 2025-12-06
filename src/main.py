@@ -6,6 +6,7 @@ from src.routers import main as main_router
 from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
 from src.routers import image as image_router
+from src.routers import voice_agent as voice_agent_router
 from src.utils.barcode.parse_barcode import init_barcode, shutdown_barcode
 from src.utils.api import init_openai_client, shutdown_openai_client, init_rate_limiter
 
@@ -29,6 +30,7 @@ app.include_router(auth_router.router)
 app.include_router(main_router.router)
 app.include_router(barcode_router.router)
 app.include_router(image_router.router)
+app.include_router(voice_agent_router.router)
 
 @app.on_event("startup")
 async def startup_event():

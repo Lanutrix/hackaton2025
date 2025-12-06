@@ -7,7 +7,7 @@ Dependency Inversion: Зависит от абстракции RateLimiterInterf
 import os
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, BinaryIO
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -61,6 +61,30 @@ class OpenAIClientInterface(ABC):
         detail: str = "auto"
     ) -> str:
         """Выполнение запроса с изображением"""
+        pass
+    
+    @abstractmethod
+    async def transcribe_audio(
+        self,
+        client_ip: str,
+        audio_file: BinaryIO,
+        filename: str = "audio.webm",
+        model: str = "whisper-1",
+        language: str = "ru"
+    ) -> str:
+        """Транскрибация аудио"""
+        pass
+    
+    @abstractmethod
+    async def chat_completion_stream(
+        self,
+        client_ip: str,
+        messages: List[Dict[str, Any]],
+        model: str = "gpt-4o-mini-2024-07-18",
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None
+    ) -> AsyncGenerator[str, None]:
+        """Стриминг chat completion"""
         pass
 
 
@@ -234,6 +258,134 @@ class RateLimitedOpenAIClient(OpenAIClientInterface):
         )
         
         return response.choices[0].message.content.strip()
+    
+    async def transcribe_audio(
+        self,
+        client_ip: str,
+        audio_file: BinaryIO,
+        filename: str = "audio.webm",
+        model: str = "whisper-1",
+        language: str = "ru"
+    ) -> str:
+        """
+        Транскрибация аудио с rate limiting.
+        
+        Args:
+            client_ip: IP адрес клиента для rate limiting
+            audio_file: Аудио файл (file-like object)
+            filename: Имя файла для определения формата
+            model: Модель транскрибации (whisper-1 или gpt-4o-transcribe)
+            language: Язык аудио
+            
+        Returns:
+            Текст транскрипции
+        """
+        from io import BytesIO
+        from pydub import AudioSegment
+        
+        await self._rate_limiter.wait_and_acquire(client_ip)
+        
+        client = await self._ensure_client()
+        
+        # Читаем содержимое файла
+        audio_content = audio_file.read()
+        audio_file.seek(0)
+        
+        ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ".webm"
+        print(f"Received audio: filename={filename}, ext={ext}, size={len(audio_content)}")
+        
+        # Конвертируем webm/ogg в mp3 для совместимости с API
+        if ext in [".webm", ".ogg", ".opus"]:
+            try:
+                print("Converting audio to mp3...")
+                audio_input = BytesIO(audio_content)
+                
+                # Определяем формат для pydub
+                format_name = "webm" if ext == ".webm" else ext[1:]
+                audio_segment = AudioSegment.from_file(audio_input, format=format_name)
+                
+                # Проверяем уровень громкости (dBFS) - если слишком тихо, отклоняем
+                loudness = audio_segment.dBFS
+                print(f"Audio loudness: {loudness} dBFS")
+                
+                # -50 dBFS - это очень тихо, скорее всего тишина или шум
+                if loudness < -45:
+                    raise ValueError(f"Аудио слишком тихое ({loudness:.1f} dBFS). Говорите громче или ближе к микрофону.")
+                
+                # Конвертируем в mp3
+                mp3_buffer = BytesIO()
+                audio_segment.export(mp3_buffer, format="mp3", bitrate="128k")
+                mp3_buffer.seek(0)
+                audio_content = mp3_buffer.read()
+                filename = "audio.mp3"
+                ext = ".mp3"
+                print(f"Converted to mp3: size={len(audio_content)}")
+            except ValueError:
+                raise  # Пробрасываем ошибку тихого аудио
+            except Exception as e:
+                print(f"Audio conversion failed: {e}, trying original format")
+        
+        # Определяем content-type по расширению
+        content_type_map = {
+            ".webm": "audio/webm",
+            ".mp4": "audio/mp4",
+            ".m4a": "audio/m4a",
+            ".wav": "audio/wav",
+            ".mp3": "audio/mpeg",
+            ".ogg": "audio/ogg",
+            ".opus": "audio/opus",
+        }
+        content_type = content_type_map.get(ext, "audio/mpeg")
+        
+        print(f"Transcribing audio: filename={filename}, content_type={content_type}, size={len(audio_content)}")
+        
+        response = await client.audio.transcriptions.create(
+            model=model,
+            file=(filename, audio_content, content_type),
+            language=language
+        )
+        
+        return response.text.strip()
+    
+    async def chat_completion_stream(
+        self,
+        client_ip: str,
+        messages: List[Dict[str, Any]],
+        model: str = "gpt-4o-mini-2024-07-18",
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None
+    ) -> AsyncGenerator[str, None]:
+        """
+        Стриминг chat completion с rate limiting.
+        
+        Args:
+            client_ip: IP адрес клиента для rate limiting
+            messages: Список сообщений для API
+            model: Модель OpenAI
+            temperature: Температура генерации
+            max_tokens: Максимальное количество токенов
+            
+        Yields:
+            Части текста ответа по мере их генерации
+        """
+        await self._rate_limiter.wait_and_acquire(client_ip)
+        
+        client = await self._ensure_client()
+        
+        kwargs = {
+            "model": model,
+            "temperature": temperature,
+            "messages": messages,
+            "stream": True
+        }
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        
+        stream = await client.chat.completions.create(**kwargs)
+        
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
 
 
 # Singleton экземпляр клиента

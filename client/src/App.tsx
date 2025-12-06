@@ -6,6 +6,7 @@ import SortingQuizPage from "./pages/SortingQuizPage";
 import WasteCategoriesPage from "./pages/WasteCategoriesPage";
 import AuthPage from "./pages/AuthPage";
 import RecognitionChoicePage from "./pages/RecognitionChoicePage";
+import VoiceAgentPage from "./pages/VoiceAgentPage";
 
 const App = () => {
   return (
@@ -18,6 +19,7 @@ const App = () => {
       <Route path="/waste-categories" element={<WasteCategoriesPage />} />
       <Route path="/recognition-choice" element={<RecognitionChoicePage />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/voice-agent" element={<VoiceAgentPage />} />
       <Route path="*" element={<Navigate to="/landing-forest" replace />} />
     </Routes>
   );
