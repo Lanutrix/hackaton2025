@@ -1,4 +1,8 @@
+import { useNavigate } from "react-router-dom";
+
 const LandingForestPage = () => {
+  const navigate = useNavigate();
+
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center relative text-white"
@@ -28,10 +32,13 @@ const LandingForestPage = () => {
             Начинается с Тебя
           </h1>
           <p className="text-base md:text-lg text-white/90">
-            Веб-приложение для сортировки мусора в стиле кассы самообслуживания.
+           Веб-приложение для сортировки мусора в стиле кассы самообслуживания.
           </p>
         </div>
-        <button className="h-12 px-6 rounded-xl bg-primary text-background-dark font-bold tracking-wide hover:bg-primary/90 transition-colors min-w-[180px]">
+        <button
+          className="h-12 px-6 rounded-xl bg-primary text-background-dark font-bold tracking-wide hover:bg-primary/90 transition-colors min-w-[180px]"
+          onClick={() => navigate("/sorting-quiz")}
+        >
           Начать
         </button>
       </div>
