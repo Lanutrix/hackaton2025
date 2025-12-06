@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiAnalyzeWaste } from "../api";
 import Button from "../components/Button";
+import CameraScreen from "../components/CameraScreen";
 
 const PhotoAnalyzePage = () => {
   const navigate = useNavigate();
@@ -130,81 +131,67 @@ const PhotoAnalyzePage = () => {
   const hasResult = result !== null && result !== undefined;
 
   return (
-    <div className="min-h-screen bg-white text-[#111813] flex flex-col items-center px-4 py-8 font-display page-enter">
-      <div className="w-full max-w-3xl flex flex-col gap-6">
-        <header className="flex items-center justify-between gap-3">
+    <CameraScreen
+      title="Сфотографируйте предмет для анализа"
+      subtitle="Мы отправим кадр на сервер для определения вида отхода."
+      onBack={() => navigate(-1)}
+      rightButtonLabel="Главная"
+      onRightClick={() => navigate("/landing-forest")}
+      footer={
+        <>
           <Button
-            onClick={() => navigate(-1)}
-            variant="outline"
-            size="md"
-            leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
+            type="button"
+            onClick={handleAnalyze}
+            disabled={!cameraReady || loading}
+            size="lg"
+            loading={loading}
+            loadingText="Отправляем..."
           >
-            Назад
+            Проанализировать
           </Button>
-          <Button onClick={() => navigate("/landing-forest")} size="md">
-            Главная
-          </Button>
-        </header>
-
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-black">Сфотографируйте предмет для анализа</h1>
-            <p className="text-sm text-slate-600">Мы отправим кадр на сервер для определения вида отхода.</p>
-          </div>
-
-          <div className="relative rounded-xl overflow-hidden border-2 border-dashed border-slate-300 bg-slate-900/80 aspect-[4/3] flex items-center justify-center">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              playsInline
-            />
-            {!cameraReady && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
-                <span className="material-symbols-outlined text-4xl">hourglass_top</span>
-                <p className="text-sm">Включаем камеру...</p>
-              </div>
-            )}
-          </div>
-
-          {previewUrl && (
-            <div className="rounded-xl overflow-hidden border border-slate-200">
-              <img
-                src={previewUrl}
-                alt="Предпросмотр кадра"
-                className="w-full object-contain max-h-[360px] bg-black/5"
-              />
+          {hasResult && !error && (
+            <div className="mt-2 bg-white border border-slate-200 rounded-lg p-3 text-sm text-slate-900">
+              {typeof result === "string" ? (
+                <p>{result}</p>
+              ) : (
+                <pre className="whitespace-pre-wrap break-words text-xs sm:text-sm">
+                  {JSON.stringify(result, null, 2)}
+                </pre>
+              )}
             </div>
           )}
-
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              onClick={handleAnalyze}
-              disabled={!cameraReady || loading}
-              size="lg"
-              loading={loading}
-              loadingText="Отправляем..."
-            >
-              Проанализировать
-            </Button>
-            {hasResult && !error && (
-              <div className="mt-2 bg-white border border-slate-200 rounded-lg p-3 text-sm text-slate-900">
-                {typeof result === "string" ? (
-                  <p>{result}</p>
-                ) : (
-                  <pre className="whitespace-pre-wrap break-words text-xs sm:text-sm">
-                    {JSON.stringify(result, null, 2)}
-                  </pre>
-                )}
-              </div>
-            )}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+        </>
+      }
+    >
+      <div
+        className={`relative rounded-xl overflow-hidden bg-slate-900/80 aspect-[4/3] flex items-center justify-center border-4 transition-all
+    ${loading ? "camera-loading border-emerald-400" : "border-emerald-400"}`}
+      >
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          playsInline
+        />
+        {!cameraReady && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+            <span className="material-symbols-outlined text-4xl">hourglass_top</span>
+            <p className="text-sm">Включаем камеру...</p>
           </div>
-        </div>
+        )}
       </div>
-    </div>
+
+      {previewUrl && (
+        <div className="rounded-xl overflow-hidden border border-slate-200">
+          <img
+            src={previewUrl}
+            alt="Предпросмотр кадра"
+            className="w-full object-contain max-h-[360px] bg-black/5"
+          />
+        </div>
+      )}
+    </CameraScreen>
   );
 };
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiDetectBarcode, apiParseBarcode } from "../api";
 import Button from "../components/Button";
+import CameraScreen from "../components/CameraScreen";
 
 const BarcodeCapturePage = () => {
   const navigate = useNavigate();
@@ -129,75 +130,60 @@ const BarcodeCapturePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#111813] flex flex-col items-center px-4 py-8 font-display page-enter">
-      <div className="w-full max-w-3xl flex flex-col gap-6">
-        <header className="flex items-center justify-between gap-3">
+    <CameraScreen
+      title="Сканирование штрих-кода с камеры"
+      onBack={() => navigate(-1)}
+      rightButtonLabel="Поиск вручную"
+      onRightClick={() => navigate("/search")}
+      footer={
+        <>
           <Button
-            onClick={() => navigate(-1)}
-            variant="outline"
-            size="md"
-            leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
+            type="button"
+            onClick={handleDetect}
+            disabled={!canSubmit}
+            size="lg"
+            loading={loading}
+            loadingText="Отправляем снимок..."
           >
-            Назад
+            Сделать фото и отправить
           </Button>
-          <Button onClick={() => navigate("/search")} size="md">
-            Поиск вручную
-          </Button>
-        </header>
+        </>
+      }
+    >
+      <div
+        className={`relative rounded-xl overflow-hidden bg-slate-900/80 aspect-[4/3] flex items-center justify-center border-4 transition-all
+    ${loading ? "camera-loading border-emerald-400" : "border-emerald-400"}`}
+      >
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          playsInline
+        />
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-black">Сканирование штрих-кода с камеры</h1>
+        {!cameraReady && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+            <span className="material-symbols-outlined text-4xl">hourglass_top</span>
+            <p className="text-sm">Запускаем камеру...</p>
           </div>
+        )}
 
-          <div className="relative rounded-xl overflow-hidden border-2 border-dashed border-slate-300 bg-slate-900/80 aspect-[4/3] flex items-center justify-center">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              playsInline
-            />
-
-            {!cameraReady && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
-                <span className="material-symbols-outlined text-4xl">hourglass_top</span>
-                <p className="text-sm">Запускаем камеру...</p>
-              </div>
-            )}
-
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute inset-0 flex flex-col">
-                <div className="flex-1 bg-black/45" />
-                <div className="relative h-[46%] mx-4">
-                  <div className="absolute -left-4 top-0 bottom-0 w-4 bg-black/45" />
-                  <div className="absolute -right-4 top-0 bottom-0 w-4 bg-black/45" />
-                  <div className="relative h-full border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame">
-                    <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
-                  </div>
-                </div>
-                <div className="flex-1 bg-black/45" />
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 flex flex-col">
+            <div className="flex-1 bg-black/45" />
+            <div className="relative h-[46%] mx-4">
+              <div className="absolute -left-4 top-0 bottom-0 w-4 bg-black/45" />
+              <div className="absolute -right-4 top-0 bottom-0 w-4 bg-black/45" />
+              <div className="relative h-full border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame">
+                <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
               </div>
             </div>
-
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              onClick={handleDetect}
-              disabled={!canSubmit}
-              size="lg"
-              loading={loading}
-              loadingText="Отправляем снимок..."
-            >
-              Сделать фото и отправить
-            </Button>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="flex-1 bg-black/45" />
           </div>
         </div>
       </div>
-    </div>
+    </CameraScreen>
   );
 };
 
