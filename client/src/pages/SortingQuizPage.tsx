@@ -5,24 +5,12 @@ const SortingQuizPage = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-full flex-col overflow-x-hidden font-display text-black"
-      style={{
-        backgroundImage: 'url("/quizBackground.jpg")',
-        backgroundSize: "cover",
-        backgroundPosition: "bottom",
-      }}
-    >
+      className="relative flex min-h-screen w-full flex-col overflow-x-hidden font-display text-black bg-white">
       <div className="flex h-full grow flex-col">
         <div className="px-4 flex flex-1 justify-center items-center py-5">
           <div className="flex flex-col max-w-[960px] flex-1">
             <div className="flex flex-col justify-center items-center gap-12 p-4 text-center">
-              <p
-                className="text-white text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-[-0.033em] max-w-2xl"
-                style={{
-                  textShadow:
-                    "-1px -1px 0 #585858ff, 1px -1px 0 #585858ff, -1px 1px 0 #585858ff, 1px 1px 0 #585858ff",
-                }}
-              >
+              <p className="text-[#111813] text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-[-0.033em] max-w-2xl">
                 Вы знаете, как сортировать свой мусор?
               </p>
               <div className="flex justify-center w-full">

@@ -13,6 +13,11 @@ export async function apiParseBarcode(barcode: string) {
   return handleResponse<unknown>(res);
 }
 
+export async function apiParseBarcodeLLM(barcode: string) {
+  const res = await fetch(`${API_BASE}/parse_barcode_llm/${barcode}`);
+  return handleResponse<unknown>(res);
+}
+
 export async function apiParseWaste(productDesc: string) {
   const res = await fetch(`${API_BASE}/parse_waste`, {
     method: "POST",
@@ -41,6 +46,18 @@ export async function apiDetectBarcode(file: File) {
   });
 
   return handleResponse<{ barcode: string }>(res);
+}
+
+export async function apiAnalyzeWaste(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/analyze_waste`, {
+    method: "POST",
+    body: formData,
+  });
+
+  return handleResponse<unknown>(res);
 }
 
 export async function apiTranscribeAudio(audioBlob: Blob): Promise<{ text: string }> {

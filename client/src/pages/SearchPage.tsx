@@ -39,7 +39,7 @@ const SearchPage = () => {
   const hasResult = result !== null && result !== undefined;
 
   return (
-    <div className="min-h-screen bg-background-light text-[#111813] flex justify-center px-4 py-6 font-public">
+    <div className="min-h-screen bg-white text-[#111813] flex justify-center px-4 py-6 font-public">
       <div className="w-full max-w-5xl flex flex-col gap-4">
         <header className="flex items-center justify-between px-4 sm:px-6 md:px-8">
           <button
@@ -74,7 +74,7 @@ const SearchPage = () => {
 
           <form
             onSubmit={handleSubmit}
-            className="sticky top-4 z-10 bg-background-light/90 backdrop-blur rounded-xl px-1 py-2 flex flex-col gap-3"
+            className="sticky top-4 z-10 bg-white/90 backdrop-blur rounded-xl px-1 py-2 flex flex-col gap-3"
           >
             <label className="flex items-center h-14 w-full rounded-xl shadow-lg shadow-primary/10 bg-white overflow-hidden ring-1 ring-slate-200">
               <span className="material-symbols-outlined text-2xl text-slate-500 px-4">search</span>
