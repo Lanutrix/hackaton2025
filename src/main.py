@@ -3,9 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.routers import main as main_router
 from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
+from src.routers import image as image_router
 from src.utils.barcode.parse_barcode import init_barcode, shutdown_barcode
 from src.utils.barcode.product_waste_analyzer import init_product_waste_analyzer, shutdown_product_waste_analyzer
 from src.utils.barcode.disposal_instructions import init_disposal_instructions, shutdown_disposal_instructions
+from src.utils.image_processing import init_image_processor, shutdown_image_processor
 
 app = FastAPI(
     title="FastAPI Application",
@@ -26,6 +28,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(main_router.router)
 app.include_router(barcode_router.router)
+app.include_router(image_router.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -38,6 +41,8 @@ async def startup_event():
     print("Product waste analyzer initialized")
     await init_disposal_instructions()
     print("Disposal instructions generator initialized")
+    await init_image_processor()
+    print("Image processor initialized")
     print("Application started")
 
 @app.on_event("shutdown")
@@ -49,6 +54,8 @@ async def shutdown_event():
     print("Product waste analyzer shutdown")
     await shutdown_disposal_instructions()
     print("Disposal instructions generator shutdown")
+    await shutdown_image_processor()
+    print("Image processor shutdown")
     
 if __name__ == "__main__":
     import uvicorn
