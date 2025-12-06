@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.routers import main as main_router
 from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
+from src.routers import barcode_ws as barcode_ws_router
 from src.utils.barcode.parse_barcode import init_barcode, shutdown_barcode
 from src.utils.barcode.product_waste_analyzer import init_product_waste_analyzer, shutdown_product_waste_analyzer
 from src.utils.barcode.disposal_instructions import init_disposal_instructions, shutdown_disposal_instructions
@@ -26,6 +27,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(main_router.router)
 app.include_router(barcode_router.router)
+app.include_router(barcode_ws_router.router)
 
 @app.on_event("startup")
 async def startup_event():
