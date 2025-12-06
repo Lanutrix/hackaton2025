@@ -101,7 +101,7 @@ const BarcodeCapturePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background-light text-[#111813] flex flex-col items-center px-4 py-8 font-display">
+    <div className="min-h-screen bg-white text-[#111813] flex flex-col items-center px-4 py-8 font-display">
       <div className="w-full max-w-3xl flex flex-col gap-6">
         <header className="flex items-center justify-between gap-3">
           <button

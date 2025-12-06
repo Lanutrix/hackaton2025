@@ -164,7 +164,7 @@ const BarcodeScanPage = () => {
   const showStep4 = !error && !!productName && hasWaste && hasInstructions;
 
   return (
-    <div className="font-display text-[#111813] min-h-screen" style={{ backgroundColor: "#F6F8F6" }}>
+    <div className="font-display text-[#111813] min-h-screen bg-white">
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
         <div className="flex h-full grow flex-col">
           <div className="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-5">

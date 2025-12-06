@@ -19,7 +19,7 @@ const RecognitionChoicePage = () => {
   };
 
   return (
-    <div className="relative flex h-screen min-h-screen w-full flex-col bg-background-light overflow-hidden font-display">
+    <div className="relative flex h-screen min-h-screen w-full flex-col bg-white overflow-hidden font-display">
       <div className="flex h-full grow flex-col">
         <div className="px-4 sm:px-8 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
           <div className="flex flex-col max-w-[960px] flex-1 w-full">

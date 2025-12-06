@@ -11,7 +11,7 @@
 }
 
 body {
-  @apply font-display bg-background-light text-[#111813] min-h-screen;
+  @apply font-display text-[#111813] min-h-screen;
 }
 
 .material-symbols-outlined {
@@ -35,4 +35,12 @@ body {
   position: absolute;
   animation: scanLine 2.5s linear infinite alternate;
   box-shadow: 0 0 10px #13ec49, 0 0 20px #13ec49;
+}
+
+.page-bg {
+  background-color: #f6f8f6;
+  background-image: url("/bg.svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
 }
