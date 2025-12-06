@@ -224,9 +224,39 @@ const VoiceAgentPage = () => {
       >
         {messages.length === 0 && chatState === "idle" && !parsedResult && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
-              <span className="material-symbols-outlined text-5xl text-white">mic</span>
+            {/* Robot Character */}
+            <div className="relative w-64 h-80 bg-gradient-to-b from-[#f0f4f1] to-[#dcece2] dark:from-[#2a3c2e] dark:to-[#1a2c1e] rounded-t-[4rem] rounded-b-[2rem] shadow-2xl border-4 border-white dark:border-[#3a4c3e] flex flex-col items-center pt-12 overflow-hidden mb-6">
+              {/* Lid Detail */}
+              <div className="absolute top-0 w-40 h-4 bg-emerald-500/20 rounded-b-xl"></div>
+              
+              {/* Face Screen */}
+              <div className="w-48 h-32 bg-[#111813] rounded-2xl flex flex-col items-center justify-center gap-4 shadow-inner border border-white/10 relative">
+                {/* Eyes with blinking animation */}
+                <div className="flex gap-8">
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(19,236,73,0.6)] relative overflow-hidden animate-blink">
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-white rounded-full opacity-80"></div>
+                  </div>
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(19,236,73,0.6)] relative overflow-hidden animate-blink" style={{ animationDelay: "0.1s" }}>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-white rounded-full opacity-80"></div>
+                  </div>
+                </div>
+                
+                {/* Mouth */}
+                <div className="w-10 h-4 border-b-4 border-emerald-500 rounded-full"></div>
+              </div>
+              
+              {/* Body Details */}
+              <div className="mt-8 flex flex-col gap-2 w-full px-8 opacity-50">
+                <div className="h-2 w-full bg-black/5 dark:bg-white/5 rounded-full"></div>
+                <div className="h-2 w-2/3 bg-black/5 dark:bg-white/5 rounded-full mx-auto"></div>
+              </div>
+              
+              {/* Recycle Icon Badge */}
+              <div className="absolute bottom-6 w-12 h-12 bg-white dark:bg-[#2a3c2e] rounded-full flex items-center justify-center shadow-lg">
+                <span className="material-symbols-outlined text-emerald-500 text-2xl">recycling</span>
+              </div>
             </div>
+            
             <h2 className="text-3xl font-bold mb-3 text-gray-900">Привет!</h2>
             <p className="text-lg text-gray-600 max-w-md leading-relaxed">
               Я помогу разобраться, как правильно отсортировать и подготовить мусор к переработке. 

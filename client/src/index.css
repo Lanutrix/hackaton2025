@@ -44,3 +44,30 @@ body {
   background-size: cover;
   background-position: center;
 }
+
+/* Robot character animations */
+@keyframes blink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+.animate-blink {
+  animation: blink 3s ease-in-out infinite;
+}
+
+@keyframes talk {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 12px;
+  }
+}
+
+.animate-talk {
+  animation: talk 0.3s ease-in-out infinite;
+}
