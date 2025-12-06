@@ -1,45 +1,100 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiDetectBarcode } from "../api";
 
 const BarcodeCapturePage = () => {
   const navigate = useNavigate();
-  const [file, setFile] = useState<File | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detected, setDetected] = useState<string | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
 
-  const canSubmit = useMemo(() => !!file && !loading, [file, loading]);
+  const canSubmit = useMemo(() => cameraReady && !loading, [cameraReady, loading]);
 
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    const startCamera = async () => {
+      setError(null);
+      setCameraReady(false);
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera is not supported in this browser.");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setCameraReady(true);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Не удалось получить доступ к камере.");
+      }
+    };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const nextFile = event.target.files?.[0] ?? null;
-    setFile(nextFile);
-    setError(null);
-    setDetected(null);
+    void startCamera();
+
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    },
+    [previewUrl],
+  );
+
+  const captureFrame = async (): Promise<Blob | null> => {
+    const video = videoRef.current;
+    if (!video || !cameraReady) return null;
+
+    const canvas = document.createElement("canvas");
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+
+    context.drawImage(video, 0, 0, width, height);
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
+    });
   };
 
   const handleDetect = async () => {
-    if (!file) return;
     setLoading(true);
     setError(null);
     setDetected(null);
     try {
+      const blob = await captureFrame();
+      if (!blob) {
+        throw new Error("Не удалось сделать снимок с камеры.");
+      }
+      const file = new File([blob], "barcode.jpg", { type: blob.type || "image/jpeg" });
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      const nextPreview = URL.createObjectURL(blob);
+      setPreviewUrl(nextPreview);
+
       const { barcode } = await apiDetectBarcode(file);
       setDetected(barcode);
       navigate(`/barcode-scan?barcode=${encodeURIComponent(barcode)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось определить штрих-код");
+      setError(err instanceof Error ? err.message : "Не удалось отправить снимок.");
     } finally {
       setLoading(false);
     }
@@ -66,34 +121,28 @@ const BarcodeCapturePage = () => {
 
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-black">Сканирование штрих-кода</h1>
-            <p className="text-slate-600 text-base">
-              Загрузите фото штрих-кода или сделайте снимок с камеры телефона, чтобы мы определили код и нашли
-              информацию о товаре.
-            </p>
+            <h1 className="text-3xl font-black">Сканирование штрих-кода с камеры</h1>
           </div>
 
-          <label className="block rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-primary/70 transition-colors cursor-pointer p-4">
-            <div className="flex flex-col items-center gap-3">
-              <span className="material-symbols-outlined text-4xl text-slate-500">photo_camera</span>
-              <div className="text-center">
-                <p className="font-semibold text-slate-800">Выберите файл или сделайте фото</p>
-                <p className="text-sm text-slate-500">Поддерживаются JPG, PNG, GIF, WEBP</p>
+          <div className="relative rounded-xl overflow-hidden border-2 border-dashed border-slate-300 bg-slate-900/80 aspect-[4/3] flex items-center justify-center">
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
+            />
+            {!cameraReady && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+                <span className="material-symbols-outlined text-4xl">hourglass_top</span>
+                <p className="text-sm">Запускаем камеру...</p>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              {file && <p className="text-sm text-slate-700">Файл: {file.name}</p>}
-            </div>
-          </label>
+            )}
+          </div>
 
           {previewUrl && (
             <div className="rounded-xl overflow-hidden border border-slate-200">
-              <img src={previewUrl} alt="Предпросмотр" className="w-full object-contain max-h-[360px] bg-black/5" />
+              <img src={previewUrl} alt="Последний снимок" className="w-full object-contain max-h-[360px] bg-black/5" />
             </div>
           )}
 
@@ -104,11 +153,11 @@ const BarcodeCapturePage = () => {
               disabled={!canSubmit}
               className="h-12 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? "Определяем штрих-код..." : "Отправить фото"}
+              {loading ? "Отправляем снимок..." : "Сделать фото и отправить"}
             </button>
             {detected && (
               <p className="text-sm text-slate-700">
-                Найден штрих-код: <span className="font-bold">{detected}</span>. Переходим к деталям...
+                Найден штрих-код: <span className="font-bold">{detected}</span>. Открываем детали...
               </p>
             )}
             {error && <p className="text-sm text-red-600">{error}</p>}
