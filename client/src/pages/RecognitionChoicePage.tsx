@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 const options = [
   { id: "voice", label: "Голосовой ввод", icon: "keyboard_voice" },
   { id: "barcode", label: "Сканер штрихкода", icon: "barcode_scanner" },
-  { id: "photo", label: "Анализ фотографий", icon: "photo_camera" },
+  { id: "photo", label: "Анализ фотографии", icon: "photo_camera" },
 ];
 
 const RecognitionChoicePage = () => {
@@ -13,13 +13,9 @@ const RecognitionChoicePage = () => {
 
   const handleNext = () => {
     if (!selected) return;
-    if (selected === "barcode") {
-      navigate("/barcode");
-    } else if (selected === "photo") {
-      navigate("/barcode-scan");
-    } else {
-      navigate("/auth");
-    }
+    if (selected === "barcode") navigate("/barcode-scan");
+    else if (selected === "photo") navigate("/barcode");
+    else navigate("/"); // TODO
   };
 
   return (

@@ -132,17 +132,35 @@ const BarcodeCapturePage = () => {
               muted
               playsInline
             />
+
             {!cameraReady && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
                 <span className="material-symbols-outlined text-4xl">hourglass_top</span>
                 <p className="text-sm">Запускаем камеру...</p>
               </div>
             )}
+
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-0 flex flex-col">
+                <div className="flex-1 bg-black/45" />
+                <div className="relative h-[46%] mx-4 rounded-xl border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame">
+                  <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
+                </div>
+                <div className="flex-1 bg-black/45" />
+              </div>
+            </div>
+
           </div>
+
 
           {previewUrl && (
             <div className="rounded-xl overflow-hidden border border-slate-200">
               <img src={previewUrl} alt="Последний снимок" className="w-full object-contain max-h-[360px] bg-black/5" />
+              <img
+                src={previewUrl}
+                alt="Последний снимок"
+                className="w-full object-contain max-h-[360px] bg-black/5"
+              />
             </div>
           )}
 
