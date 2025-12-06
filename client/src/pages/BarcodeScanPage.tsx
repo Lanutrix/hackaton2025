@@ -1,15 +1,19 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiDisposalInstructions, apiParseBarcode, apiParseWaste } from "../api";
+
+type ParsedData = Record<string, unknown> | string | null;
 
 const BarcodeScanPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [barcode, setBarcode] = useState("");
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<ParsedData>(null);
   const [productName, setProductName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [waste, setWaste] = useState<unknown>(null);
+  const [waste, setWaste] = useState<ParsedData>(null);
   const [wasteLoading, setWasteLoading] = useState(false);
   const [instructions, setInstructions] = useState<Record<string, string> | null>(null);
   const [instructionsLoading, setInstructionsLoading] = useState(false);
@@ -34,7 +38,7 @@ const BarcodeScanPage = () => {
       setWasteLoading(true);
       setError(null);
       try {
-        const wasteData = await apiParseWaste(productName);
+        const wasteData = (await apiParseWaste(productName)) as ParsedData;
         setWaste(wasteData);
       } catch (err) {
         setWaste(null);
@@ -46,7 +50,18 @@ const BarcodeScanPage = () => {
     fetchWaste();
   }, [productName]);
 
-  const deriveName = (data: unknown) => {
+  useEffect(() => {
+    const initialBarcode = searchParams.get("barcode");
+    if (!initialBarcode) return;
+    if (initialBarcode !== barcode) {
+      setBarcode(initialBarcode);
+    }
+    if (initialBarcode.trim().length >= 6) {
+      void processBarcode(initialBarcode);
+    }
+  }, [searchParams]);
+
+  const deriveName = (data: ParsedData) => {
     if (typeof data === "string") return data;
     if (data && typeof data === "object") {
       const obj = data as Record<string, unknown>;
@@ -60,15 +75,14 @@ const BarcodeScanPage = () => {
     return null;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!isBarcodeValid) return;
+  const processBarcode = async (code: string) => {
+    if (!code.trim() || code.trim().length < 6) return;
     setLoading(true);
     setError(null);
     setWaste(null);
     setInstructions(null);
     try {
-      const data = await apiParseBarcode(barcode.trim());
+      const data = (await apiParseBarcode(code.trim())) as ParsedData;
       setResult(data);
       const name = deriveName(data);
       if (name) {
@@ -84,6 +98,13 @@ const BarcodeScanPage = () => {
       setLoading(false);
     }
   };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await processBarcode(barcode);
+  };
+
+  const hasResult = result !== null && result !== undefined;
 
   return (
     <div className="min-h-screen bg-background-light text-[#111813] flex flex-col items-center px-4 py-8 font-display">
@@ -141,7 +162,7 @@ const BarcodeScanPage = () => {
       </form>
 
       {error && <p className="text-red-600 mt-3">{error}</p>}
-      {result && !error && (
+      {hasResult && !error && (
         <div className="w-full max-w-xl mt-4 bg-white border border-gray-200 rounded-lg p-3 text-sm">
           <div className="flex items-center gap-2 text-slate-700 mb-2">
             <span className="material-symbols-outlined">inventory_2</span>
@@ -168,7 +189,7 @@ const BarcodeScanPage = () => {
       )}
 
       {wasteLoading && <p className="text-slate-600 mt-3">Определяем отходы...</p>}
-      {waste && wasteEntries && !wasteLoading && (
+      {wasteEntries && !wasteLoading && (
         <div className="w-full max-w-xl mt-4 bg-white border border-gray-200 rounded-lg p-3 text-sm space-y-3">
           <div className="flex items-center gap-2 text-slate-700">
             <span className="material-symbols-outlined">recycling</span>

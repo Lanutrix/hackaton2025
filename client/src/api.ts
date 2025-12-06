@@ -31,4 +31,16 @@ export async function apiDisposalInstructions(name: string, params: Record<strin
   return handleResponse<Record<string, string | unknown>>(res);
 }
 
+export async function apiDetectBarcode(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/detect_barcode`, {
+    method: "POST",
+    body: formData,
+  });
+
+  return handleResponse<{ barcode: string }>(res);
+}
+
 export { API_BASE };

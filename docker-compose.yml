@@ -39,6 +39,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # React client
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: react_client
+    ports:
+      - "${CLIENT_PORT:-5173}:80"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - app_network
+    restart: unless-stopped
+
 # Named volumes
 volumes:
   postgres_data:

@@ -1,11 +1,14 @@
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiParseWaste } from "../api";
+
+type WasteData = Record<string, unknown> | string | null;
 
 const SearchPage = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("пластиковая бутылка воды");
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<WasteData>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +26,7 @@ const SearchPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiParseWaste(query.trim());
+      const data = (await apiParseWaste(query.trim())) as WasteData;
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка запроса");
@@ -32,6 +35,8 @@ const SearchPage = () => {
       setLoading(false);
     }
   };
+
+  const hasResult = result !== null && result !== undefined;
 
   return (
     <div className="min-h-screen bg-background-light text-[#111813] flex justify-center px-4 py-6 font-public">
@@ -52,7 +57,7 @@ const SearchPage = () => {
             </button>
             <button
               className="flex items-center justify-center rounded-full h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-              onClick={() => navigate("/barcode-scan")}
+              onClick={() => navigate("/barcode")}
             >
               <span className="material-symbols-outlined text-xl">qr_code_scanner</span>
             </button>
@@ -109,7 +114,7 @@ const SearchPage = () => {
           </form>
 
           {error && <p className="text-red-600 mt-4">{error}</p>}
-          {result && !error && (
+          {hasResult && !error && (
             <div className="mt-6 bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col gap-3">
               <div className="flex items-center gap-2 text-slate-700">
                 <span className="material-symbols-outlined">recycling</span>
