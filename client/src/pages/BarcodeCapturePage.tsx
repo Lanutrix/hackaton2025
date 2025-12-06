@@ -143,8 +143,12 @@ const BarcodeCapturePage = () => {
             <div className="pointer-events-none absolute inset-0">
               <div className="absolute inset-0 flex flex-col">
                 <div className="flex-1 bg-black/45" />
-                <div className="relative h-[46%] mx-4 rounded-xl border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame">
-                  <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
+                <div className="relative h-[46%] mx-4">
+                  <div className="absolute -left-4 top-0 bottom-0 w-4 bg-black/45" />
+                  <div className="absolute -right-4 top-0 bottom-0 w-4 bg-black/45" />
+                  <div className="relative h-full border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame">
+                    <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
+                  </div>
                 </div>
                 <div className="flex-1 bg-black/45" />
               </div>

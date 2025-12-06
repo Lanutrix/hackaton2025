@@ -13,6 +13,11 @@ export async function apiParseBarcode(barcode: string) {
   return handleResponse<unknown>(res);
 }
 
+export async function apiParseBarcodeLLM(barcode: string) {
+  const res = await fetch(`${API_BASE}/parse_barcode_llm/${barcode}`);
+  return handleResponse<unknown>(res);
+}
+
 export async function apiParseWaste(productDesc: string) {
   const res = await fetch(`${API_BASE}/parse_waste`, {
     method: "POST",
