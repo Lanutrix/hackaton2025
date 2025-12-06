@@ -15,7 +15,12 @@ python-multipart==0.0.6
 beautifulsoup4==4.12.3
 requests==2.31.0
 openai>=1.0.0
-opencv-python==4.9.0.80
-pyzbar==0.1.9
+
+# Barcode scanning dependencies
+opencv-python-headless>=4.8.0
 numpy>=1.24.0
+pyzbar>=0.1.9
+Pillow>=10.0.0
+
+# WebSocket support (already included in uvicorn[standard])
 websockets>=12.0
