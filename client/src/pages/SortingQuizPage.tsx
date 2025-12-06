@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 
 const SortingQuizPage = () => {
   const navigate = useNavigate();
@@ -15,20 +16,23 @@ const SortingQuizPage = () => {
               </p>
               <div className="flex justify-center w-full">
                 <div className="flex flex-col sm:flex-row flex-1 gap-4 px-4 py-3 max-w-lg justify-center">
-                  <button
-                    className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-16 px-6 bg-primary text-[#111813] text-lg font-bold leading-normal tracking-[0.015em] grow transition-transform hover:scale-105 active:scale-100 opacity-75"
+                  <Button
+                    className="min-w-[84px] h-16 px-6 bg-primary text-[#111813] text-lg tracking-[0.015em] grow transition-transform hover:scale-105 active:scale-100 opacity-75"
                     type="button"
                     onClick={() => navigate("/waste-categories")}
+                    size="xl"
                   >
                     <span className="truncate">Да</span>
-                  </button>
-                  <button
-                    className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-16 px-6 bg-[#f0f4f1] text-[#111813] text-lg font-bold leading-normal tracking-[0.015em] grow transition-transform hover:scale-105 active:scale-100"
+                  </Button>
+                  <Button
+                    className="min-w-[84px] h-16 px-6 bg-[#f0f4f1] text-[#111813] text-lg tracking-[0.015em] grow transition-transform hover:scale-105 active:scale-100"
                     type="button"
                     onClick={() => navigate("/recognition-choice")}
+                    size="xl"
+                    variant="secondary"
                   >
                     <span className="truncate">Нет</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

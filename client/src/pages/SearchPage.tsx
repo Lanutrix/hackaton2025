@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiParseWaste } from "../api";
+import Button from "../components/Button";
 
 type WasteData = Record<string, unknown> | string | null;
 
@@ -42,25 +43,34 @@ const SearchPage = () => {
     <div className="min-h-screen bg-white text-[#111813] flex justify-center px-4 py-6 font-public">
       <div className="w-full max-w-5xl flex flex-col gap-4">
         <header className="flex items-center justify-between px-4 sm:px-6 md:px-8">
-          <button
-            className="flex items-center justify-center rounded-full h-14 w-14 bg-white text-slate-900 hover:bg-slate-100 shadow-sm transition-colors"
+          <Button
+            className="h-14 w-14 bg-white text-slate-900 hover:bg-slate-100 shadow-sm"
             onClick={() => navigate(-1)}
+            size="icon"
+            variant="ghost"
+            aria-label="Назад"
           >
             <span className="material-symbols-outlined text-3xl">arrow_back</span>
-          </button>
+          </Button>
           <div className="flex gap-3">
-            <button
-              className="flex items-center justify-center rounded-full h-10 w-10 bg-black/5 text-slate-900 hover:bg-black/10 transition-colors"
+            <Button
+              className="h-10 w-10 bg-black/5 text-slate-900 hover:bg-black/10"
               onClick={() => navigate("/landing-forest")}
+              size="icon"
+              variant="ghost"
+              aria-label="На главную"
             >
               <span className="material-symbols-outlined text-xl">home</span>
-            </button>
-            <button
-              className="flex items-center justify-center rounded-full h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            </Button>
+            <Button
+              className="h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20"
               onClick={() => navigate("/barcode")}
+              size="icon"
+              variant="soft"
+              aria-label="Открыть сканер"
             >
               <span className="material-symbols-outlined text-xl">qr_code_scanner</span>
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -85,31 +95,38 @@ const SearchPage = () => {
                 onChange={(e) => setQuery(e.target.value)}
               />
               {query && (
-                <button
+                <Button
                   type="button"
-                  className="px-4 text-slate-500 hover:text-slate-700 transition-colors"
+                  className="px-4 text-slate-500 hover:text-slate-700 h-full"
                   onClick={() => setQuery("")}
                   aria-label="Очистить запрос"
+                  variant="ghost"
+                  size="sm"
                 >
                   <span className="material-symbols-outlined text-2xl">cancel</span>
-                </button>
+                </Button>
               )}
             </label>
             <div className="flex gap-3">
-              <button
+              <Button
                 type="submit"
                 disabled={!query.trim() || loading}
-                className="h-12 px-6 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="h-12 px-6 rounded-lg"
+                size="lg"
+                loading={loading}
+                loadingText="Ищем..."
               >
-                {loading ? "Ищем..." : "Определить отход"}
-              </button>
-              <button
+                Определить отход
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setQuery("пластиковая бутылка воды 0.5л")}
-                className="h-12 px-6 rounded-lg border border-slate-200 bg-white font-bold text-slate-900 hover:bg-slate-50 transition-colors"
+                className="h-12 px-6 rounded-lg border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+                size="lg"
+                variant="outline"
               >
                 Пример
-              </button>
+              </Button>
             </div>
           </form>
 

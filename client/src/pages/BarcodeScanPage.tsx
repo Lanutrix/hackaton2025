@@ -6,6 +6,7 @@ import {
   apiParseBarcodeLLM,
   apiParseWaste,
 } from "../api";
+import Button from "../components/Button";
 
 type ParsedData = Record<string, unknown> | string | null;
 type NavState = {
@@ -211,14 +212,16 @@ const BarcodeScanPage = () => {
           <div className="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-5">
             <div className="flex flex-col max-w-[960px] flex-1">
               <div className="flex justify-end gap-2 px-4 py-3">
-                <button
+                <Button
                   type="button"
                   onClick={() => navigate(-1)}
-                  className="p-2 text-[#111813] flex items-center gap-2 rounded-lg hover:bg-gray-200 transition-colors"
+                  variant="ghost"
+                  size="sm"
+                  className="p-2 text-[#111813] gap-2 hover:bg-gray-200"
                 >
                   <span className="material-symbols-outlined">close</span>
                   <span className="font-bold hidden sm:inline">Отмена</span>
-                </button>
+                </Button>
               </div>
 
               <div className="flex-grow flex flex-col justify-center items-center p-4 space-y-12">
@@ -357,13 +360,14 @@ const BarcodeScanPage = () => {
                     </div>
 
                     <div className="w-full pt-12">
-                      <button
+                      <Button
                         type="button"
                         onClick={() => navigate("/landing-forest")}
-                        className="w-full text-center text-lg font-bold py-4 px-6 rounded-xl bg-primary/70 text-background-dark hover:bg-primary/90 transition-all"
+                        className="w-full py-4 px-6 rounded-xl bg-primary/70 text-background-dark hover:bg-primary/90"
+                        size="xl"
                       >
                         Готово
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -375,15 +379,17 @@ const BarcodeScanPage = () => {
                         Ошибка
                       </p>
                       <p className="text-red-700 text-sm">{error}</p>
-                      <div className="mt-4 flex justify-end">
-                        <button
+                    <div className="mt-4 flex justify-end">
+                        <Button
                           type="button"
                           onClick={() => navigate(-1)}
-                          className="h-10 px-4 rounded-lg border border-gray-300 text-[#111813] bg-white hover:bg-gray-100 transition-colors text-sm font-bold flex items-center gap-2"
+                          variant="outline"
+                          size="sm"
+                          className="h-10 px-4 text-sm gap-2"
                         >
                           <span className="material-symbols-outlined text-base">arrow_back</span>
                           Назад
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>

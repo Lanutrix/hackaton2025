@@ -1,3 +1,5 @@
+import Button from "../components/Button";
+
 const AuthPage = () => {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-10">
@@ -31,12 +33,22 @@ const AuthPage = () => {
         </p>
 
         <div className="flex flex-col gap-3 w-full max-w-md">
-          <button className="h-14 rounded-xl bg-slate-100 text-slate-900 font-bold hover:bg-slate-200 transition-colors">
+          <Button
+            variant="secondary"
+            size="xl"
+            fullWidth
+            className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+          >
             Продолжить без авторизации
-          </button>
-          <button className="h-14 rounded-xl border-2 border-primary text-primary font-bold hover:bg-primary/10 transition-colors">
+          </Button>
+          <Button
+            variant="outline"
+            size="xl"
+            fullWidth
+            className="border-2 border-primary text-primary hover:bg-primary/10"
+          >
             Авторизоваться по номеру телефона
-          </button>
+          </Button>
         </div>
       </div>
     </div>

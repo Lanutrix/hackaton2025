@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiAnalyzeWaste } from "../api";
+import Button from "../components/Button";
 
 const PhotoAnalyzePage = () => {
   const navigate = useNavigate();
@@ -132,19 +133,17 @@ const PhotoAnalyzePage = () => {
     <div className="min-h-screen bg-white text-[#111813] flex flex-col items-center px-4 py-8 font-display">
       <div className="w-full max-w-3xl flex flex-col gap-6">
         <header className="flex items-center justify-between gap-3">
-          <button
+          <Button
             onClick={() => navigate(-1)}
-            className="h-11 px-4 rounded-lg border border-gray-300 bg-white font-bold text-[#111813] hover:bg-gray-100 transition-colors flex items-center gap-2"
+            variant="outline"
+            size="md"
+            leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
           >
-            <span className="material-symbols-outlined">arrow_back</span>
             Назад
-          </button>
-          <button
-            onClick={() => navigate("/landing-forest")}
-            className="h-11 px-4 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors"
-          >
+          </Button>
+          <Button onClick={() => navigate("/landing-forest")} size="md">
             Главная
-          </button>
+          </Button>
         </header>
 
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
@@ -180,14 +179,16 @@ const PhotoAnalyzePage = () => {
           )}
 
           <div className="flex flex-col gap-2">
-            <button
+            <Button
               type="button"
               onClick={handleAnalyze}
               disabled={!cameraReady || loading}
-              className="h-12 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              size="lg"
+              loading={loading}
+              loadingText="Отправляем..."
             >
-              {loading ? "Отправляем..." : "Проанализировать"}
-            </button>
+              Проанализировать
+            </Button>
             {hasResult && !error && (
               <div className="mt-2 bg-white border border-slate-200 rounded-lg p-3 text-sm text-slate-900">
                 {typeof result === "string" ? (

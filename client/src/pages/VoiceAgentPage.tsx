@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiTranscribeAudio, apiVoiceAgentChatStream, type ChatMessage } from "../api";
+import Button from "../components/Button";
 
 type ChatState = "idle" | "recording" | "transcribing" | "responding";
 
@@ -202,19 +203,25 @@ const VoiceAgentPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50 to-white text-gray-900 flex flex-col font-display">
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-        <button
-          className="flex items-center justify-center rounded-full h-12 w-12 bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700"
+        <Button
+          className="h-12 w-12 bg-gray-100 hover:bg-gray-200 text-gray-700"
           onClick={() => navigate(-1)}
+          size="icon"
+          variant="ghost"
+          aria-label="Назад"
         >
           <span className="material-symbols-outlined text-2xl">arrow_back</span>
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Голосовой помощник</h1>
-        <button
-          className="flex items-center justify-center rounded-full h-12 w-12 bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700"
+        <Button
+          className="h-12 w-12 bg-gray-100 hover:bg-gray-200 text-gray-700"
           onClick={() => navigate("/landing-forest")}
+          size="icon"
+          variant="ghost"
+          aria-label="На главную"
         >
           <span className="material-symbols-outlined text-xl">home</span>
-        </button>
+        </Button>
       </header>
 
       {/* Chat Area */}
@@ -346,12 +353,13 @@ const VoiceAgentPage = () => {
               </ol>
             </div>
 
-            <button
+            <Button
               onClick={resetChat}
-              className="mt-6 w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 transition-colors font-bold text-white text-lg"
+              className="mt-6 w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-lg"
+              size="xl"
             >
               Начать заново
-            </button>
+            </Button>
           </div>
         )}
 
@@ -378,16 +386,21 @@ const VoiceAgentPage = () => {
           )}
 
           {/* Main button */}
-          <button
+          <Button
             onClick={handleStartButton}
             disabled={chatState === "transcribing" || chatState === "responding"}
-            className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
+            className={`relative w-24 h-24 transition-all duration-300 ${
               chatState === "recording"
                 ? "bg-red-500 hover:bg-red-400 scale-110 text-white"
                 : chatState === "transcribing" || chatState === "responding"
                 ? "bg-gray-200 cursor-not-allowed text-gray-400"
                 : "bg-gradient-to-br from-emerald-400 to-teal-600 hover:from-emerald-300 hover:to-teal-500 shadow-lg shadow-emerald-500/30 text-white"
             }`}
+            size="icon"
+            variant="ghost"
+            shape="circle"
+            iconOnly
+            aria-label="Управление записью"
           >
             {chatState === "recording" ? (
               <span className="material-symbols-outlined text-5xl">stop</span>
@@ -396,7 +409,7 @@ const VoiceAgentPage = () => {
             ) : (
               <span className="material-symbols-outlined text-5xl">mic</span>
             )}
-          </button>
+          </Button>
 
           {/* Hint */}
           <p className="text-base text-gray-500 text-center">

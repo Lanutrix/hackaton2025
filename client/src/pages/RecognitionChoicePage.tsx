@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 
 const options = [
   { id: "voice", label: "Голосовой ввод", icon: "keyboard_voice" },
@@ -25,21 +26,27 @@ const RecognitionChoicePage = () => {
           <div className="flex flex-col max-w-[960px] flex-1 w-full">
             <header className="flex items-center justify-between whitespace-nowrap px-4 sm:px-6 md:px-10 py-3">
               <div className="flex items-center gap-4 text-slate-900">
-                <button
+                <Button
                   type="button"
                   onClick={() => navigate(-1)}
-                  className="flex items-center justify-center rounded-full h-14 w-14 bg-white text-slate-900 hover:bg-slate-100 transition-colors duration-200"
+                  size="icon"
+                  variant="ghost"
+                  className="h-14 w-14 bg-white text-slate-900 hover:bg-slate-100 duration-200"
+                  aria-label="Назад"
                 >
                   <span className="material-symbols-outlined text-3xl">arrow_back</span>
-                </button>
+                </Button>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={() => navigate("/")}
-                className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-black/5 text-slate-900 gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0"
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 bg-black/5 text-slate-900"
+                aria-label="На главную"
               >
                 <span className="material-symbols-outlined text-xl">home</span>
-              </button>
+              </Button>
             </header>
 
             <main className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
@@ -53,12 +60,14 @@ const RecognitionChoicePage = () => {
                   {options.map((option) => {
                     const isSelected = selected === option.id;
                     return (
-                      <button
+                      <Button
                         key={option.id}
                         type="button"
                         onClick={() => handleSelect(option.id)}
                         data-state={isSelected ? "selected" : undefined}
-                        className="group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 bg-transparent rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 data-[state=selected]:bg-[#ddf9e7]"
+                        size="lg"
+                        variant="outline"
+                        className="h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 bg-transparent border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 data-[state=selected]:bg-[#ddf9e7]"
                       >
                         <span className="material-symbols-outlined text-4xl text-gray-600 transition-colors duration-200 group-data-[state=selected]/item:text-[#166534]">
                           {option.icon}
@@ -66,7 +75,7 @@ const RecognitionChoicePage = () => {
                         <p className="text-[#111813] text-lg font-semibold leading-normal transition-all duration-200 group-data-[state=selected]/item:text-[#166534]">
                           {option.label}
                         </p>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 
 type Category = {
   id: string;
@@ -45,11 +46,13 @@ const WasteCategoriesPage = () => {
               {categories.map((category) => {
                 const isSelected = selected.has(category.id);
                 return (
-                  <button
+                  <Button
                     type="button"
                     key={category.id}
                     onClick={() => toggleSelection(category.id)}
-                    className={`group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 ${
+                    size="lg"
+                    variant="outline"
+                    className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border border-gray-200 hover:border-gray-300 transition-all duration-200 ${
                       isSelected ? "bg-[#E0FAE9]" : "bg-transparent"
                     } ${category.id === "plastic" ? "col-span-2" : ""}`}
                     data-state={isSelected ? "selected" : undefined}
@@ -63,7 +66,7 @@ const WasteCategoriesPage = () => {
                     <p className="text-[#111813] text-base font-semibold leading-normal group-data-[state=selected]/item:font-bold group-data-[state=selected]/item:text-green-900 transition-all">
                       {category.label}
                     </p>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -72,21 +75,24 @@ const WasteCategoriesPage = () => {
         <footer className="w-full bg-white border-t border-gray-200 p-4">
           <div className="flex justify-center w-full">
             <div className="flex flex-col sm:flex-row flex-1 gap-3 px-4 py-3 justify-center max-w-sm">
-              <button
-                className="flex w-full sm:w-auto flex-1 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-14 px-5 bg-primary text-[#111813] text-lg font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              <Button
+                className="w-full sm:w-auto flex-1 min-w-[84px] h-14 px-5 bg-primary text-[#111813] text-lg tracking-[0.015em] hover:bg-opacity-90"
                 type="button"
                 onClick={() => hasSelection && navigate("/auth")}
                 disabled={!hasSelection}
+                size="xl"
               >
                 <span className="truncate">Добавить</span>
-              </button>
-              <button
-                className="flex w-full sm:w-auto flex-1 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-14 px-5 bg-[#f0f4f1] text-[#111813] text-lg font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-opacity"
+              </Button>
+              <Button
+                className="w-full sm:w-auto flex-1 min-w-[84px] h-14 px-5 bg-[#f0f4f1] text-[#111813] text-lg tracking-[0.015em] hover:bg-opacity-80"
                 type="button"
                 onClick={() => navigate("/landing-forest")}
+                size="xl"
+                variant="secondary"
               >
                 <span className="truncate">Отмена</span>
-              </button>
+              </Button>
             </div>
           </div>
         </footer>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiDetectBarcode, apiParseBarcode } from "../api";
+import Button from "../components/Button";
 
 const BarcodeCapturePage = () => {
   const navigate = useNavigate();
@@ -131,19 +132,17 @@ const BarcodeCapturePage = () => {
     <div className="min-h-screen bg-white text-[#111813] flex flex-col items-center px-4 py-8 font-display">
       <div className="w-full max-w-3xl flex flex-col gap-6">
         <header className="flex items-center justify-between gap-3">
-          <button
+          <Button
             onClick={() => navigate(-1)}
-            className="h-11 px-4 rounded-lg border border-gray-300 bg-white font-bold text-[#111813] hover:bg-gray-100 transition-colors flex items-center gap-2"
+            variant="outline"
+            size="md"
+            leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
           >
-            <span className="material-symbols-outlined">arrow_back</span>
             Назад
-          </button>
-          <button
-            onClick={() => navigate("/search")}
-            className="h-11 px-4 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors"
-          >
+          </Button>
+          <Button onClick={() => navigate("/search")} size="md">
             Поиск вручную
-          </button>
+          </Button>
         </header>
 
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
@@ -183,32 +182,17 @@ const BarcodeCapturePage = () => {
 
           </div>
 
-
-          {/* {previewUrl && (
-            <div className="rounded-xl overflow-hidden border border-slate-200">
-              <img src={previewUrl} alt="Последний снимок" className="w-full object-contain max-h-[360px] bg-black/5" />
-              <img
-                src={previewUrl}
-                alt="Последний снимок"
-                className="w-full object-contain max-h-[360px] bg-black/5"
-              />
-            </div>
-          )} */}
-
           <div className="flex flex-col gap-2">
-            <button
+            <Button
               type="button"
               onClick={handleDetect}
               disabled={!canSubmit}
-              className="h-12 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              size="lg"
+              loading={loading}
+              loadingText="Отправляем снимок..."
             >
-              {loading ? "Отправляем снимок..." : "Сделать фото и отправить"}
-            </button>
-            {/* {detected && (
-              <p className="text-sm text-slate-700">
-                Найден штрих-код: <span className="font-bold">{detected}</span>. Открываем детали...
-              </p>
-            )} */}
+              Сделать фото и отправить
+            </Button>
             {error && <p className="text-sm text-red-600">{error}</p>}
           </div>
         </div>
