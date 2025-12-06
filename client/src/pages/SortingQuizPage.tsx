@@ -6,7 +6,7 @@ const SortingQuizPage = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-full flex-col overflow-x-hidden font-display text-black bg-white">
+      className="relative flex min-h-screen w-full flex-col overflow-x-hidden font-display text-black bg-white page-enter">
       <div className="flex h-full grow flex-col">
         <div className="px-4 flex flex-1 justify-center items-center py-5">
           <div className="flex flex-col max-w-[960px] flex-1">

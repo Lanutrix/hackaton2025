@@ -200,7 +200,7 @@ const VoiceAgentPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50 to-white text-gray-900 flex flex-col font-display">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50 to-white text-gray-900 flex flex-col font-display page-enter-slow">
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <Button

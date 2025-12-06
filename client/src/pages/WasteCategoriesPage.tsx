@@ -33,7 +33,7 @@ const WasteCategoriesPage = () => {
   const hasSelection = selected.size > 0;
 
   return (
-    <div className="relative flex h-screen min-h-screen w-full flex-col bg-white text-black overflow-hidden font-display">
+    <div className="relative flex h-screen min-h-screen w-full flex-col bg-white text-black overflow-hidden font-display page-enter">
       <div className="flex h-full grow flex-col">
         <main className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col w-full max-w-2xl">
@@ -52,9 +52,9 @@ const WasteCategoriesPage = () => {
                     onClick={() => toggleSelection(category.id)}
                     size="lg"
                     variant="outline"
-                    className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border border-gray-200 hover:border-gray-300 transition-all duration-200 ${
-                      isSelected ? "bg-[#E0FAE9]" : "bg-transparent"
-                    } ${category.id === "plastic" ? "col-span-2" : ""}`}
+                    className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border hover:border-gray-300 transition-all duration-200
+  ${isSelected ? "!bg-[#E0FAE9] !border-green-300" : "bg-transparent border-gray-200"}
+  ${category.id === "plastic" ? "col-span-2" : ""}`}
                     data-state={isSelected ? "selected" : undefined}
                   >
                     <span

@@ -40,7 +40,7 @@ const SearchPage = () => {
   const hasResult = result !== null && result !== undefined;
 
   return (
-    <div className="min-h-screen bg-white text-[#111813] flex justify-center px-4 py-6 font-public">
+    <div className="min-h-screen bg-white text-[#111813] flex justify-center px-4 py-6 font-public page-enter">
       <div className="w-full max-w-5xl flex flex-col gap-4">
         <header className="flex items-center justify-between px-4 sm:px-6 md:px-8">
           <Button

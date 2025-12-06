@@ -15,7 +15,7 @@ const LandingForestPage = () => {
       }}
     >
       <div className="absolute inset-0" aria-hidden />
-      <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-6 md:px-10 py-5">
+      <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-6 md:px-10 py-5 page-enter">
         <div className="flex items-center gap-3">
           <img
             src="/logo.png"
@@ -26,7 +26,7 @@ const LandingForestPage = () => {
 
       </div>
 
-      <div className="relative z-10 flex flex-col gap-6 text-center items-center px-4 pb-16">
+      <div className="relative z-10 flex flex-col gap-6 text-center items-center px-4 pb-16 page-enter">
         <div className="flex flex-col gap-2 max-w-3xl">
           <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
             Чистый Мир
