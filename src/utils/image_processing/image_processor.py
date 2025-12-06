@@ -20,13 +20,21 @@ WASTE_ANALYSIS_PROMPT = """Ты эксперт по сортировке и ут
 
 Твоя задача:
 1. Разбери предмет на ВСЕ составные части (упаковка, крышка, этикетка, содержимое и т.д.)
-2. Для каждой части укажи тип отхода: пластик, стекло, металл, бумага, картон, тетрапак, органика, опасные, смешанные
+2. Для каждой части ТОЧНО определи тип материала: пластик, стекло, металл, бумага, картон, тетрапак, органика
 3. Составь короткую пошаговую инструкцию по утилизации (каждый шаг - одно действие)
+
+ВАЖНО - правила определения материалов:
+- Этикетки бывают: бумажные (матовые, легко рвутся) → "бумага"
+- Крышки: пластиковые → "пластик", металлические → "металл"
+- Фольгированные упаковки, пакеты с металлическим слоем → "металл"
+- Тетрапак (молоко, соки) → "тетрапак" (отдельный контейнер)
+- Внимательно смотри на ТЕКСТУРУ материала на фото!
 
 Инструкция должна быть:
 - Короткой и понятной (максимум 5-7 шагов)
 - Практичной (человек делает это дома)
 - Последовательной (подготовка → разделение → утилизация)
+- Если компоненты из РАЗНЫХ материалов - указывай разные баки для каждого!
 
 Ответь ТОЛЬКО в формате JSON без markdown-разметки.
 
@@ -48,6 +56,23 @@ WASTE_ANALYSIS_PROMPT = """Ты эксперт по сортировке и ут
         "7": "Этикетку положи в бак для бумаги."
     }
 }
+"""
+
+# Промпт для распознавания штрихкода
+BARCODE_DETECTION_PROMPT = """Найди штрихкод на изображении и извлеки его номер.
+
+Твоя задача:
+1. Найти штрихкод (EAN-13, EAN-8, UPC-A, UPC-E или другой)
+2. Прочитать цифры под штрихкодом или распознать их по полоскам
+
+Ответь ТОЛЬКО цифрами штрихкода без пробелов и других символов.
+Если штрихкод не найден или не читается, ответь: NOT_FOUND
+Если видно несколько штрихкодов, верни только первый найденный.
+
+Примеры ответов:
+4600104030703
+4607066980442
+NOT_FOUND
 """
 
 
@@ -247,6 +272,61 @@ class ImageProcessor:
                 "raw_content": content
             }
     
+    async def detect_barcode(
+        self,
+        image_base64: str,
+        use_cache: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Распознаёт штрихкод на изображении и возвращает его номер.
+        
+        Args:
+            image_base64: Изображение в формате base64
+            use_cache: Использовать кэширование
+        
+        Returns:
+            Dict с результатом:
+            - success: True если штрихкод найден
+            - barcode: Номер штрихкода (строка цифр)
+            - error: Описание ошибки (если success=False)
+        """
+        result = await self.process_image(
+            prompt=BARCODE_DETECTION_PROMPT,
+            image_base64=image_base64,
+            detail="low",  # Минимальная детализация
+            max_tokens=64,  # Короткий ответ
+            temperature=0.1,  # Минимальная вариативность
+            use_cache=use_cache
+        )
+        
+        if not result["success"]:
+            return result
+        
+        content = result["content"].strip()
+        
+        # Проверяем, найден ли штрихкод
+        if content == "NOT_FOUND" or not content:
+            return {
+                "success": False,
+                "error": "Штрихкод не найден на изображении"
+            }
+        
+        # Извлекаем только цифры
+        import re
+        digits = re.sub(r'\D', '', content)
+        
+        if not digits:
+            return {
+                "success": False,
+                "error": "Не удалось распознать цифры штрихкода",
+                "raw_content": content
+            }
+        
+        return {
+            "success": True,
+            "barcode": digits
+        }
+    
     async def analyze_waste(
         self,
         image_base64: str,
@@ -275,7 +355,7 @@ class ImageProcessor:
             image_base64=image_base64,
             detail=detail,
             max_tokens=1024,
-            temperature=0.3,
+            temperature=0.1,
             use_cache=use_cache
         )
 
@@ -351,6 +431,25 @@ async def analyze_waste(image_base64: str, **kwargs) -> Dict[str, Any]:
     if _image_processor is None:
         raise RuntimeError("ImageProcessor не инициализирован. Вызовите init_image_processor()")
     return await _image_processor.analyze_waste(image_base64, **kwargs)
+
+
+async def detect_barcode(image_base64: str, **kwargs) -> Dict[str, Any]:
+    """
+    Распознаёт штрихкод на фото и возвращает его номер.
+    
+    Args:
+        image_base64: Изображение в формате base64
+        **kwargs: Дополнительные параметры (use_cache)
+    
+    Returns:
+        Dict с результатом:
+        - success: True если штрихкод найден
+        - barcode: Номер штрихкода (строка цифр)
+        - error: Описание ошибки (если success=False)
+    """
+    if _image_processor is None:
+        raise RuntimeError("ImageProcessor не инициализирован. Вызовите init_image_processor()")
+    return await _image_processor.detect_barcode(image_base64, **kwargs)
 
 
 # Пример использования
