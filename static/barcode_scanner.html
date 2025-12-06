@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EAN-13 Barcode Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #121a2b;
+            --bg-card: #1a2438;
+            --accent: #00f5d4;
+            --accent-dim: #00f5d433;
+            --text-primary: #e8edf5;
+            --text-secondary: #8892a6;
+            --success: #00f5d4;
+            --error: #ff6b6b;
+            --warning: #ffd93d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 245, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 100, 200, 0.06) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #00a8e8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scan-line {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            box-shadow: 0 0 20px var(--accent);
+            animation: scanLine 2s ease-in-out infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scanning .scan-line {
+            opacity: 1;
+        }
+
+        @keyframes scanLine {
+            0%, 100% { top: 20%; }
+            50% { top: 80%; }
+        }
+
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .video-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .overlay-text {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .overlay-text svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #00a8e8);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-dim);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            transition: background 0.3s;
+        }
+
+        .status-indicator.connected {
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+        }
+
+        .status-indicator.error {
+            background: var(--error);
+            box-shadow: 0 0 12px var(--error);
+        }
+
+        .result-display {
+            min-height: 200px;
+        }
+
+        .result-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-secondary);
+        }
+
+        .result-empty svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .result-content {
+            display: none;
+        }
+
+        .result-content.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .barcode-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-dim), rgba(0, 168, 232, 0.1));
+            border-radius: 12px;
+            border: 1px solid var(--accent);
+            margin-bottom: 1rem;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+
+        .result-image-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #resultImage {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .result-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .history-section {
+            margin-top: 2rem;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .history-thumb {
+            width: 60px;
+            height: 45px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: var(--bg-card);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .history-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            color: var(--text-secondary);
+        }
+
+        .settings-value {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 1rem 2rem;
+            background: var(--success);
+            color: var(--bg-primary);
+            border-radius: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: var(--error);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📱 Barcode Scanner</h1>
+            <p class="subtitle">Наведите камеру на штрихкод EAN-13 для сканирования</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Camera Section -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        Камера
+                    </div>
+                    <select id="cameraSelect">
+                        <option value="">Выберите камеру</option>
+                    </select>
+                </div>
+
+                <div class="video-container" id="videoContainer">
+                    <video id="video" autoplay playsinline muted></video>
+                    <div class="scan-line"></div>
+                    <div class="video-overlay" id="videoOverlay">
+                        <div class="overlay-text">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            <p>Нажмите "Начать сканирование"<br>для доступа к камере</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" id="startBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Начать сканирование
+                    </button>
+                    <button class="btn btn-secondary" id="stopBtn" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="6" y="6" width="12" height="12"/>
+                        </svg>
+                        Стоп
+                    </button>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="statusText">Отключено</span>
+                </div>
+
+                <!-- Settings -->
+                <div style="margin-top: 1rem;">
+                    <div class="settings-row">
+                        <span class="settings-label">Интервал отправки (мс)</span>
+                        <div class="settings-value">
+                            <input type="number" id="intervalInput" value="100" min="50" max="1000" step="50">
+                        </div>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Качество JPEG</span>
+                        <div class="settings-value">
+                            <input type="number" id="qualityInput" value="80" min="10" max="100" step="5">
+                            <span>%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        Результат
+                    </div>
+                    <span id="scanCount">0 сканирований</span>
+                </div>
+
+                <div class="result-display">
+                    <div class="result-empty" id="resultEmpty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="3" y1="9" x2="21" y2="9"/>
+                            <line x1="9" y1="21" x2="9" y2="9"/>
+                        </svg>
+                        <p>Результат сканирования появится здесь</p>
+                    </div>
+
+                    <div class="result-content" id="resultContent">
+                        <div class="barcode-value" id="barcodeValue">-</div>
+                        <div class="result-image-container">
+                            <img id="resultImage" alt="Скан">
+                        </div>
+                        <div class="result-meta">
+                            <span id="resultTime">-</span>
+                            <button class="btn btn-secondary" style="flex: 0; padding: 0.5rem 1rem;" onclick="copyBarcode()">
+                                📋 Копировать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="history-section">
+                    <div class="card-header" style="margin-top: 1rem;">
+                        <div class="card-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            История
+                        </div>
+                        <button class="btn btn-secondary" style="flex: 0; padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="clearHistory()">
+                            Очистить
+                        </button>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <div class="result-empty" style="height: 100px;">
+                            <p style="font-size: 0.875rem;">История пуста</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Configuration
+        const WS_URL = `ws://${window.location.hostname}:8000/ws/scan`;
+        
+        // DOM Elements
+        const video = document.getElementById('video');
+        const videoContainer = document.getElementById('videoContainer');
+        const videoOverlay = document.getElementById('videoOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const intervalInput = document.getElementById('intervalInput');
+        const qualityInput = document.getElementById('qualityInput');
+        const resultEmpty = document.getElementById('resultEmpty');
+        const resultContent = document.getElementById('resultContent');
+        const barcodeValue = document.getElementById('barcodeValue');
+        const resultImage = document.getElementById('resultImage');
+        const resultTime = document.getElementById('resultTime');
+        const scanCount = document.getElementById('scanCount');
+        const historyList = document.getElementById('historyList');
+        const toast = document.getElementById('toast');
+
+        // State
+        let ws = null;
+        let stream = null;
+        let sendInterval = null;
+        let canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d');
+        let totalScans = 0;
+        let history = [];
+
+        // Initialize camera list
+        async function initCameras() {
+            try {
+                // First try to enumerate without permission
+                let devices = await navigator.mediaDevices.enumerateDevices();
+                let videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                // If no labels, we need permission
+                if (videoDevices.length > 0 && !videoDevices[0].label) {
+                    try {
+                        // Request permission and immediately stop
+                        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        tempStream.getTracks().forEach(track => track.stop());
+                        
+                        // Re-enumerate with permission
+                        devices = await navigator.mediaDevices.enumerateDevices();
+                        videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    } catch (e) {
+                        console.log('Could not get camera permission for enumeration');
+                    }
+                }
+                
+                cameraSelect.innerHTML = '<option value="">Автовыбор камеры</option>';
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Камера ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                // Select back camera by default if available
+                const backCamera = videoDevices.find(d => 
+                    d.label.toLowerCase().includes('back') || 
+                    d.label.toLowerCase().includes('rear') ||
+                    d.label.toLowerCase().includes('environment')
+                );
+                if (backCamera) {
+                    cameraSelect.value = backCamera.deviceId;
+                }
+                // Don't auto-select first camera, let user choose or use facingMode
+            } catch (err) {
+                console.error('Error enumerating cameras:', err);
+            }
+        }
+
+        // Start scanning
+        async function startScanning() {
+            try {
+                // Build video constraints properly
+                let videoConstraints = {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                };
+
+                // Add device or facing mode constraint
+                const selectedDeviceId = cameraSelect.value;
+                if (selectedDeviceId && selectedDeviceId.length > 0) {
+                    videoConstraints.deviceId = { exact: selectedDeviceId };
+                } else {
+                    // Use back camera if available
+                    videoConstraints.facingMode = 'environment';
+                }
+
+                console.log('Camera constraints:', videoConstraints);
+
+                stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+                video.srcObject = stream;
+                await video.play();
+
+                // Update canvas size
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                });
+
+                // Connect WebSocket
+                connectWebSocket();
+
+                // Update UI
+                videoOverlay.classList.add('hidden');
+                videoContainer.classList.add('scanning');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                cameraSelect.disabled = true;
+
+            } catch (err) {
+                console.error('Error starting camera:', err);
+                showToast('Ошибка доступа к камере: ' + err.message, true);
+            }
+        }
+
+        // Stop scanning
+        function stopScanning() {
+            // Stop sending frames
+            if (sendInterval) {
+                clearInterval(sendInterval);
+                sendInterval = null;
+            }
+
+            // Close WebSocket
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            // Stop camera
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            // Update UI
+            video.srcObject = null;
+            videoOverlay.classList.remove('hidden');
+            videoContainer.classList.remove('scanning');
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            cameraSelect.disabled = false;
+            updateStatus('disconnected');
+        }
+
+        // Connect WebSocket
+        function connectWebSocket() {
+            updateStatus('connecting');
+
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                updateStatus('connected');
+                startSendingFrames();
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleBarcodeResult(data);
+                } catch (err) {
+                    console.error('Error parsing message:', err);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus('error');
+            };
+
+            ws.onclose = () => {
+                updateStatus('disconnected');
+                if (sendInterval) {
+                    clearInterval(sendInterval);
+                    sendInterval = null;
+                }
+            };
+        }
+
+        // Start sending video frames
+        function startSendingFrames() {
+            const interval = parseInt(intervalInput.value) || 100;
+            const quality = (parseInt(qualityInput.value) || 80) / 100;
+
+            sendInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN && video.readyState >= 2) {
+                    ctx.drawImage(video, 0, 0);
+                    canvas.toBlob((blob) => {
+                        if (blob && ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(blob);
+                        }
+                    }, 'image/jpeg', quality);
+                }
+            }, interval);
+        }
+
+        // Handle barcode result
+        function handleBarcodeResult(data) {
+            totalScans++;
+            scanCount.textContent = `${totalScans} сканирований`;
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ru-RU');
+
+            // Update current result
+            barcodeValue.textContent = data.code;
+            resultImage.src = `data:image/jpeg;base64,${data.img}`;
+            resultTime.textContent = timeStr;
+
+            resultEmpty.style.display = 'none';
+            resultContent.classList.add('visible');
+
+            // Add to history
+            addToHistory({
+                code: data.code,
+                img: data.img,
+                time: timeStr
+            });
+
+            // Show toast
+            showToast(`✅ Штрихкод: ${data.code}`);
+
+            // Play sound (optional)
+            playBeep();
+        }
+
+        // Add to history
+        function addToHistory(item) {
+            history.unshift(item);
+            if (history.length > 20) history.pop();
+            renderHistory();
+        }
+
+        // Render history
+        function renderHistory() {
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="result-empty" style="height: 100px;">
+                        <p style="font-size: 0.875rem;">История пуста</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = history.map((item, index) => `
+                <div class="history-item" onclick="showHistoryItem(${index})">
+                    <img class="history-thumb" src="data:image/jpeg;base64,${item.img}" alt="Скан">
+                    <div class="history-info">
+                        <div class="history-code">${item.code}</div>
+                        <div class="history-time">${item.time}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show history item
+        function showHistoryItem(index) {
+            const item = history[index];
+            if (item) {
+                barcodeValue.textContent = item.code;
+                resultImage.src = `data:image/jpeg;base64,${item.img}`;
+                resultTime.textContent = item.time;
+
+                resultEmpty.style.display = 'none';
+                resultContent.classList.add('visible');
+            }
+        }
+
+        // Clear history
+        function clearHistory() {
+            history = [];
+            renderHistory();
+            showToast('История очищена');
+        }
+
+        // Copy barcode to clipboard
+        function copyBarcode() {
+            const code = barcodeValue.textContent;
+            if (code && code !== '-') {
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast('📋 Скопировано: ' + code);
+                });
+            }
+        }
+
+        // Update status indicator
+        function updateStatus(status) {
+            statusIndicator.className = 'status-indicator';
+            
+            switch (status) {
+                case 'connected':
+                    statusIndicator.classList.add('connected');
+                    statusText.textContent = 'Подключено • Сканирование...';
+                    break;
+                case 'connecting':
+                    statusText.textContent = 'Подключение...';
+                    break;
+                case 'error':
+                    statusIndicator.classList.add('error');
+                    statusText.textContent = 'Ошибка подключения';
+                    break;
+                default:
+                    statusText.textContent = 'Отключено';
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.className = 'toast' + (isError ? ' error' : '');
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Play beep sound
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 1000;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch (e) {
+                // Audio not supported
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startScanning);
+        stopBtn.addEventListener('click', stopScanning);
+
+        cameraSelect.addEventListener('change', () => {
+            if (stream) {
+                stopScanning();
+                startScanning();
+            }
+        });
+
+        intervalInput.addEventListener('change', () => {
+            if (sendInterval) {
+                clearInterval(sendInterval);
+                startSendingFrames();
+            }
+        });
+
+        // Initialize
+        initCameras();
+    </script>
+</body>
+</html>
+

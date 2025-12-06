@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from src.routers import main as main_router
 from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
