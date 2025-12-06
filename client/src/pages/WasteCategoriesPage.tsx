@@ -11,13 +11,13 @@ const categories: Category[] = [
   { id: "food", label: "Пищевые отходы", icon: "restaurant" },
   { id: "glass", label: "Стекло", icon: "wine_bar" },
   { id: "metal", label: "Металл", icon: "propane_tank" },
-  { id: "plastic", label: "Пластик", icon: "water_bottle" },
   { id: "paper", label: "Бумага", icon: "description" },
+  { id: "plastic", label: "Пластик", icon: "water_bottle" },
 ];
 
 const WasteCategoriesPage = () => {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<Set<string>>(new Set(["glass"]));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggleSelection = (id: string) => {
     const next = new Set(selected);
@@ -28,6 +28,8 @@ const WasteCategoriesPage = () => {
     }
     setSelected(next);
   };
+
+  const hasSelection = selected.size > 0;
 
   return (
     <div className="relative flex h-screen min-h-screen w-full flex-col bg-white text-black overflow-hidden font-display">
@@ -49,7 +51,7 @@ const WasteCategoriesPage = () => {
                     onClick={() => toggleSelection(category.id)}
                     className={`group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 ${
                       isSelected ? "bg-[#E0FAE9]" : "bg-transparent"
-                    }`}
+                    } ${category.id === "plastic" ? "col-span-2" : ""}`}
                     data-state={isSelected ? "selected" : undefined}
                   >
                     <span
@@ -71,9 +73,10 @@ const WasteCategoriesPage = () => {
           <div className="flex justify-center w-full">
             <div className="flex flex-col sm:flex-row flex-1 gap-3 px-4 py-3 justify-center max-w-sm">
               <button
-                className="flex w-full sm:w-auto flex-1 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-14 px-5 bg-primary text-[#111813] text-lg font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-opacity"
+                className="flex w-full sm:w-auto flex-1 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-14 px-5 bg-primary text-[#111813] text-lg font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
-                onClick={() => navigate("/auth")}
+                onClick={() => hasSelection && navigate("/auth")}
+                disabled={!hasSelection}
               >
                 <span className="truncate">Добавить</span>
               </button>
