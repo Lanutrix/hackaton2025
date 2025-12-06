@@ -1,58 +1,49 @@
-import os
+"""
+Поиск названия товара по штрих-коду через LLM с веб-поиском.
+
+Single Responsibility: Только логика поиска товара по штрих-коду
+Dependency Inversion: Зависит от абстракции OpenAIClientInterface
+"""
 import asyncio
-import json
-import re
-from typing import Any, Dict, Optional
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from typing import Dict, Optional
 
-load_dotenv()
-
-API_KEY = os.getenv("OPENAI_API_KEY")
-BASE_URL = "https://api.proxyapi.ru/openai/v1"
-
-if API_KEY is None:
-    raise RuntimeError("OPENAI_API_KEY is not set in the environment")
+from src.utils.api import get_openai_client
 
 
 class BarcodeLLMParser:
+    """Парсер штрих-кодов через LLM с веб-поиском"""
+    
     def __init__(self):
-        self.client = None
-        self._semaphore = asyncio.Semaphore(1)  # Limit: no more than 1 concurrent request
-        self._mapping = {}  # Cache for parsing results
-
-    async def _ensure_client(self):
-        if self.client is None:
-            self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
-
-    async def close(self):
-        if self.client:
-            await self.client.close()
-            self.client = None
-
-    async def parse_barcode(self, barcode: int) -> Optional[str]:
-        """Ищет название товара по штрих-коду через LLM с веб-поиском"""
+        self._cache: Dict[int, Optional[str]] = {}
+        self._cache_lock = asyncio.Lock()
+    
+    async def parse_barcode(self, barcode: int, client_ip: str) -> Optional[str]:
+        """
+        Ищет название товара по штрих-коду через LLM с веб-поиском.
         
-        # Check cache before request
-        if barcode in self._mapping:
-            return self._mapping[barcode]
+        Args:
+            barcode: Штрих-код товара
+            client_ip: IP адрес клиента для rate limiting
+            
+        Returns:
+            Название товара или None если не найден
+        """
+        # Проверяем кэш
+        if barcode in self._cache:
+            return self._cache[barcode]
         
-        # If not in cache, execute request with semaphore limit
-        async with self._semaphore:  # Limit concurrent requests
-            await self._ensure_client()
+        async with self._cache_lock:
+            # Double-check после получения лока
+            if barcode in self._cache:
+                return self._cache[barcode]
             
             try:
-                # Используем responses endpoint с web_search
-                response = await self.client.responses.create(
-                    model="gpt-4o-mini-2024-07-18",
-                    temperature=0.1,  # Низкая температура для более детерминированных ответов
-                    tools=[{
-                        "type": "web_search",
-                        "search_context_size": "high"  # low, medium, high
-                    }],
-                    input=f"Найди название товара по штрих-коду (EAN): {barcode}. Ответь ТОЛЬКО названием товара, без пояснений. Если не найдено - ответь null."
+                client = get_openai_client()
+                response_text = await client.web_search(
+                    client_ip=client_ip,
+                    prompt=f"Найди название товара по штрих-коду (EAN): {barcode}. Ответь ТОЛЬКО названием товара, без пояснений. Если не найдено - ответь null.",
+                    temperature=0.1
                 )
-                response_text = response.output_text.strip()
                 
                 # Проверяем на null/не найден
                 if response_text.lower() in ['null', 'не найден', 'не найдено', 'not found', 'none']:
@@ -60,49 +51,36 @@ class BarcodeLLMParser:
                 else:
                     result = response_text
                     
-            except Exception as e:
-                # В случае ошибки возвращаем None
+            except Exception:
                 result = None
             
-            await asyncio.sleep(0.1)  # Delay between requests
-            # Save result to cache
-            self._mapping[barcode] = result
+            # Сохраняем в кэш
+            self._cache[barcode] = result
             return result
-
-
-_barcode_llm = None
-
-async def init_barcode_llm():
-    global _barcode_llm
-    _barcode_llm = BarcodeLLMParser()
-
-async def shutdown_barcode_llm():
-    global _barcode_llm
-    if _barcode_llm:
-        await _barcode_llm.close()
-    _barcode_llm = None
-
-async def parse_barcode_llm(barcode: int) -> Optional[str]:
-    return await _barcode_llm.parse_barcode(barcode)
-
-
-# Пример использования
-if __name__ == "__main__":
-    async def main():
-        await init_barcode_llm()
-        try:
-            barcodes = [
-                4690228106217,
-                5449000000996,  # Coca-Cola
-                4607062760420
-            ]
-            
-            for barcode in barcodes:
-                print(f"🔍 Штрих-код: {barcode}")
-                result = await parse_barcode_llm(barcode)
-                print(f"   📦 Товар: {result}\n")
-        finally:
-            await shutdown_barcode_llm()
     
-    asyncio.run(main())
+    def clear_cache(self) -> None:
+        """Очистка кэша"""
+        self._cache.clear()
 
+
+# Singleton экземпляр (ленивая инициализация)
+_barcode_llm: Optional[BarcodeLLMParser] = None
+
+
+def _get_parser() -> BarcodeLLMParser:
+    """Получение или создание парсера"""
+    global _barcode_llm
+    if _barcode_llm is None:
+        _barcode_llm = BarcodeLLMParser()
+    return _barcode_llm
+
+
+async def parse_barcode_llm(barcode: int, client_ip: str = "default") -> Optional[str]:
+    """
+    Поиск названия товара по штрих-коду.
+    
+    Args:
+        barcode: Штрих-код товара
+        client_ip: IP адрес клиента (по умолчанию "default")
+    """
+    return await _get_parser().parse_barcode(barcode, client_ip)

@@ -5,10 +5,8 @@ from src.routers import auth as auth_router
 from src.routers import barcode as barcode_router
 from src.routers import image as image_router
 from src.utils.barcode.parse_barcode import init_barcode, shutdown_barcode
-from src.utils.barcode.barcode_llm import init_barcode_llm, shutdown_barcode_llm
-from src.utils.barcode.product_waste_analyzer import init_product_waste_analyzer, shutdown_product_waste_analyzer
-from src.utils.barcode.disposal_instructions import init_disposal_instructions, shutdown_disposal_instructions
 from src.utils.image_processing import init_image_processor, shutdown_image_processor
+from src.utils.api import init_openai_client, shutdown_openai_client, init_rate_limiter
 
 app = FastAPI(
     title="FastAPI Application",
@@ -36,14 +34,18 @@ async def startup_event():
     from src.init_db import init_db
     await init_db()
     print("Database initialized")
+    
+    # Инициализация rate limiter (10 запросов в секунду на IP)
+    init_rate_limiter(max_requests=10, window_seconds=1.0)
+    print("Rate limiter initialized")
+    
+    # Инициализация OpenAI клиента (используется всеми LLM сервисами)
+    await init_openai_client()
+    print("OpenAI client initialized")
+    
     await init_barcode()
     print("Barcode parser initialized")
-    await init_barcode_llm()
-    print("Barcode LLM parser initialized")
-    await init_product_waste_analyzer()
-    print("Product waste analyzer initialized")
-    await init_disposal_instructions()
-    print("Disposal instructions generator initialized")
+    
     await init_image_processor()
     print("Image processor initialized")
     print("Application started")
@@ -51,18 +53,16 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("Application shutting down")
+    
     await shutdown_barcode()
     print("Barcode parser shutdown")
-    await shutdown_barcode_llm()
-    print("Barcode LLM parser shutdown")
-    await shutdown_product_waste_analyzer()
-    print("Product waste analyzer shutdown")
-    await shutdown_disposal_instructions()
-    print("Disposal instructions generator shutdown")
+    
     await shutdown_image_processor()
     print("Image processor shutdown")
+    
+    await shutdown_openai_client()
+    print("OpenAI client shutdown")
     
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-

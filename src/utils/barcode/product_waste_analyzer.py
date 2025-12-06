@@ -1,115 +1,100 @@
-import os
+"""
+Анализатор товаров для сортировки мусора.
+
+Single Responsibility: Только логика анализа товара на компоненты
+Dependency Inversion: Зависит от абстракции OpenAIClientInterface
+"""
 import asyncio
 import json
 import re
-from typing import Any, Dict
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from typing import Any, Dict, Optional
 
-load_dotenv()
-
-API_KEY = os.getenv("OPENAI_API_KEY")
-BASE_URL = "https://api.proxyapi.ru/openai/v1"
-
-if API_KEY is None:
-    raise RuntimeError("OPENAI_API_KEY is not set in the environment")
+from src.utils.api import get_openai_client
 
 
 class ProductWasteAnalyzer:
+    """Анализатор товаров для сортировки мусора"""
+    
     def __init__(self):
-        self.client = None
-        self._semaphore = asyncio.Semaphore(1)  # Limit: no more than 1 concurrent request
-        self._mapping = {}  # Cache for parsing results
-
-    async def _ensure_client(self):
-        if self.client is None:
-            self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
-
-    async def close(self):
-        if self.client:
-            await self.client.close()
-            self.client = None
-
-    async def parse_waste_with_web_search(self, product_desc: str) -> Dict[str, Any]:
-        """Работает с endpoint /responses и type: web_search"""
+        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache_lock = asyncio.Lock()
+    
+    async def parse_waste_with_web_search(
+        self, 
+        product_desc: str,
+        client_ip: str
+    ) -> Dict[str, Any]:
+        """
+        Анализирует товар для сортировки мусора с использованием веб-поиска.
         
-        # Check cache before request
-        if product_desc in self._mapping:
-            return self._mapping[product_desc]
+        Args:
+            product_desc: Описание товара
+            client_ip: IP адрес клиента для rate limiting
+            
+        Returns:
+            Словарь с компонентами и их типами отходов
+        """
+        # Проверяем кэш
+        if product_desc in self._cache:
+            return self._cache[product_desc]
         
-        # If not in cache, execute request with semaphore limit
-        async with self._semaphore:  # Limit concurrent requests
-            await self._ensure_client()
+        async with self._cache_lock:
+            # Double-check после получения лока
+            if product_desc in self._cache:
+                return self._cache[product_desc]
             
             try:
-                # Используем responses endpoint вместо chat/completions
-                response = await self.client.responses.create(
-                    model="gpt-4o-mini-2024-07-18",  # или gpt-4o-2024-11-20
-                    temperature=0.1,  # Низкая температура для более детерминированных ответов
-                    tools=[{
-                        "type": "web_search",
-                        "search_context_size": "high"  # low, medium, high
-                    }],
-                    input=f"Проанализируй товар `{product_desc}` для сортировки мусора. Разбери на компоненты и укажи типы отходов: стекло, пластик, металл, бумага, картон, фольга, тетрапак, органика, опасные отходы. Ответь кратко в формате JSON: {{\"элемент\": \"тип отхода\", ...}}"
+                client = get_openai_client()
+                response_text = await client.web_search(
+                    client_ip=client_ip,
+                    prompt=f"Проанализируй товар `{product_desc}` для сортировки мусора. Разбери на компоненты и укажи типы отходов: стекло, пластик, металл, бумага, картон, фольга, тетрапак, органика, опасные отходы. Ответь кратко в формате JSON: {{\"элемент\": \"тип отхода\", ...}}",
+                    temperature=0.1
                 )
-                response_text = response.output_text.strip()
                 
                 # Парсим JSON из ответа
                 try:
                     result = json.loads(response_text)
                 except json.JSONDecodeError:
                     # Если не удалось распарсить, пытаемся извлечь JSON из текста
-                    # Ищем JSON блок в тексте
                     json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text)
                     if json_match:
                         result = json.loads(json_match.group())
                     else:
-                        # Если JSON не найден, возвращаем ошибку в формате JSON
                         result = {"error": "Не удалось распарсить JSON из ответа", "raw_response": response_text}
+                        
             except Exception as e:
                 result = {"error": f"Ошибка анализа: {str(e)}"}
             
-            await asyncio.sleep(0.1)  # Delay between requests
-            # Save result to cache
-            self._mapping[product_desc] = result
+            # Сохраняем в кэш
+            self._cache[product_desc] = result
             return result
-
-
-_product_waste_analyzer = None
-
-async def init_product_waste_analyzer():
-    global _product_waste_analyzer
-    _product_waste_analyzer = ProductWasteAnalyzer()
-
-async def shutdown_product_waste_analyzer():
-    global _product_waste_analyzer
-    if _product_waste_analyzer:
-        await _product_waste_analyzer.close()
-    _product_waste_analyzer = None
-
-async def parse_waste_with_web_search(product_desc: str) -> Dict[str, Any]:
-    return await _product_waste_analyzer.parse_waste_with_web_search(product_desc)
-
-
-# Пример использования
-if __name__ == "__main__":
-    async def main():
-        await init_product_waste_analyzer()
-        try:
-            products = [
-                "ПЕЧЕНЬЕ ОВСЯНОЕ \"ЗЛАКОВОЕ АССОРТИ\"",
-                "ПРОДУКТ ПИТЬЕВОЙ J7 0.3Л ПЕРСИК/ЯБЛОКО/МАНГО"
-            ]
-            
-            # Доступные модели:
-            # - gpt-4o-mini-search-preview-2025-03-11 (дешевле, ~36.72₽ запрос)
-            # - gpt-4o-search-preview-2025-03-11 (дороже, точнее)
-            
-            for product in products:
-                print(f"📦 {product}")
-                result = await parse_waste_with_web_search(product)
-                print(f"   {result}\n")
-        finally:
-            await shutdown_product_waste_analyzer()
     
-    asyncio.run(main())
+    def clear_cache(self) -> None:
+        """Очистка кэша"""
+        self._cache.clear()
+
+
+# Singleton экземпляр (ленивая инициализация)
+_product_waste_analyzer: Optional[ProductWasteAnalyzer] = None
+
+
+def _get_analyzer() -> ProductWasteAnalyzer:
+    """Получение или создание анализатора"""
+    global _product_waste_analyzer
+    if _product_waste_analyzer is None:
+        _product_waste_analyzer = ProductWasteAnalyzer()
+    return _product_waste_analyzer
+
+
+async def parse_waste_with_web_search(
+    product_desc: str,
+    client_ip: str = "default"
+) -> Dict[str, Any]:
+    """
+    Анализ товара для сортировки.
+    
+    Args:
+        product_desc: Описание товара
+        client_ip: IP адрес клиента (по умолчанию "default")
+    """
+    return await _get_analyzer().parse_waste_with_web_search(product_desc, client_ip)

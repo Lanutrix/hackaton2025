@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from typing import Dict
 from src.utils.barcode.parse_barcode import parse_barcode
@@ -14,38 +14,67 @@ router = APIRouter(
 # Кэш для инструкций по утилизации
 _disposal_cache: Dict[str, dict] = {}
 
+
+def get_client_ip(request: Request) -> str:
+    """Получение IP адреса клиента"""
+    # Проверяем заголовки прокси
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        # Берём первый IP из списка
+        return forwarded.split(",")[0].strip()
+    
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    
+    # Fallback на client host
+    if request.client:
+        return request.client.host
+    
+    return "unknown"
+
+
 class ProductDescRequest(BaseModel):
     product_desc: str
+
 
 class DisposalRequest(BaseModel):
     name: str
     params: Dict[str, str]
 
+
 @router.get("/parse_barcode/{barcode}")
 async def parse_barcode_route(barcode: int):
     return await parse_barcode(barcode)
 
+
 @router.get("/parse_barcode_llm/{barcode}")
-async def parse_barcode_llm_route(barcode: int):
+async def parse_barcode_llm_route(barcode: int, request: Request):
     """Альтернативный поиск названия товара по штрих-коду через LLM с веб-поиском"""
-    return await parse_barcode_llm(barcode)
+    client_ip = get_client_ip(request)
+    return await parse_barcode_llm(barcode, client_ip)
+
 
 @router.post("/parse_waste")
-async def parse_waste_route(request: ProductDescRequest):
-    result = await parse_waste_with_web_search(request.product_desc)
+async def parse_waste_route(request_body: ProductDescRequest, request: Request):
+    client_ip = get_client_ip(request)
+    result = await parse_waste_with_web_search(request_body.product_desc, client_ip)
     return result
 
+
 @router.post("/disposal_instructions")
-async def disposal_instructions_route(request: DisposalRequest):
+async def disposal_instructions_route(request_body: DisposalRequest, request: Request):
+    client_ip = get_client_ip(request)
+    
     # Формируем ключ кэша
-    cache_key = f"{request.name}:{json.dumps(request.params, sort_keys=True, ensure_ascii=False)}"
+    cache_key = f"{request_body.name}:{json.dumps(request_body.params, sort_keys=True, ensure_ascii=False)}"
     
     # Проверяем кэш
     if cache_key in _disposal_cache:
         return _disposal_cache[cache_key]
     
     # Если нет в кэше - запрашиваем у LLM
-    result = await generate_disposal_instructions(request.name, request.params)
+    result = await generate_disposal_instructions(request_body.name, request_body.params, client_ip)
     
     # Сохраняем в кэш
     _disposal_cache[cache_key] = result
