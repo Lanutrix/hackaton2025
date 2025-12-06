@@ -121,3 +121,17 @@ body {
 .camera-loading {
   animation: cameraBlinkGreen 0.8s ease-in-out infinite;
 }
+
+@keyframes selectPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+.selected-pop {
+  animation: selectPop 180ms ease-out;
+}
+
+.fade-bg {
+  transition: background-color 220ms ease, border-color 220ms ease;
+}

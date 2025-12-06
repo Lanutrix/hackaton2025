@@ -133,8 +133,8 @@ const BarcodeCapturePage = () => {
     <CameraScreen
       title="Сканирование штрих-кода с камеры"
       onBack={() => navigate(-1)}
-      rightButtonLabel="Поиск вручную"
-      onRightClick={() => navigate("/search")}
+      rightButtonLabel="Главная"
+      onRightClick={() => navigate("/landing-forest")}
       footer={
         <>
           <Button

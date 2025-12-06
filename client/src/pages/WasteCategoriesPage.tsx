@@ -52,9 +52,9 @@ const WasteCategoriesPage = () => {
                     onClick={() => toggleSelection(category.id)}
                     size="lg"
                     variant="outline"
-                    className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border hover:border-gray-300 transition-all duration-200
-  ${isSelected ? "!bg-[#E0FAE9] !border-green-300" : "bg-transparent border-gray-200"}
-  ${category.id === "plastic" ? "col-span-2" : ""}`}
+                    className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border hover:border-gray-300 transition-all duration-200 fade-bg
+                      ${isSelected ? "!bg-[#E0FAE9] !border-green-300 selected-pop" : "bg-transparent border-gray-200"}
+                      ${category.id === "plastic" ? "col-span-2" : ""}`}
                     data-state={isSelected ? "selected" : undefined}
                   >
                     <span

@@ -16,6 +16,7 @@ const RecognitionChoicePage = () => {
     setSelected((prev) => (prev === id ? null : id));
     if (id === "barcode") navigate("/barcode");
     else if (id === "photo") navigate("/photo-analyze");
+    else if (id === "voice") navigate("/voice-agent");
     else navigate("/");
   };
 

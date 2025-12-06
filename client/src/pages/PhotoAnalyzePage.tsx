@@ -115,7 +115,7 @@ const PhotoAnalyzePage = () => {
 
       navigate("/barcode-scan", {
         state: {
-          productName: "Photo analysis result",
+          productName: "Анализ фотографии",
           result: data,
           waste: params,
           instructions: steps,
@@ -181,16 +181,6 @@ const PhotoAnalyzePage = () => {
           </div>
         )}
       </div>
-
-      {previewUrl && (
-        <div className="rounded-xl overflow-hidden border border-slate-200">
-          <img
-            src={previewUrl}
-            alt="Предпросмотр кадра"
-            className="w-full object-contain max-h-[360px] bg-black/5"
-          />
-        </div>
-      )}
     </CameraScreen>
   );
 };
