@@ -39,6 +39,26 @@ services:
       timeout: 5s
       retries: 5
 
+  # React client
+  client:
+    image: node:20-alpine
+    working_dir: /app
+    container_name: react_client
+    environment:
+      - CHOKIDAR_USEPOLLING=1
+    command: sh -c "npm install && npm run dev -- --host --port 5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    ports:
+      - "${CLIENT_PORT:-5173}:5173"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - app_network
+    restart: unless-stopped
+
 # Named volumes
 volumes:
   postgres_data:
