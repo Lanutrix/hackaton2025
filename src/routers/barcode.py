@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Dict
 from src.utils.barcode.parse_barcode import parse_barcode
+from src.utils.barcode.barcode_llm import parse_barcode_llm
 from src.utils.barcode.product_waste_analyzer import parse_waste_with_web_search
 from src.utils.barcode.disposal_instructions import generate_disposal_instructions
 
@@ -23,6 +24,11 @@ class DisposalRequest(BaseModel):
 @router.get("/parse_barcode/{barcode}")
 async def parse_barcode_route(barcode: int):
     return await parse_barcode(barcode)
+
+@router.get("/parse_barcode_llm/{barcode}")
+async def parse_barcode_llm_route(barcode: int):
+    """Альтернативный поиск названия товара по штрих-коду через LLM с веб-поиском"""
+    return await parse_barcode_llm(barcode)
 
 @router.post("/parse_waste")
 async def parse_waste_route(request: ProductDescRequest):
