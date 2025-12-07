@@ -21,6 +21,10 @@ const HomePage = () => {
 
   const handleNavClick = (item: NavItem) => {
     setActiveNav(item.id);
+    if (item.id === "scan") {
+      navigate("/scan");
+      return;
+    }
     if (item.id === "profile") {
       navigate("/login"); // placeholder action
     }
@@ -72,7 +76,11 @@ const HomePage = () => {
                 <p className="text-[#5a7a63] text-sm">Для сдачи отходов</p>
               </div>
             </div>
-            <button className="w-10 h-10 rounded-full bg-[#13ec49] flex items-center justify-center shadow-button">
+            <button
+              type="button"
+              onClick={() => navigate("/scan")}
+              className="w-10 h-10 rounded-full bg-[#13ec49] flex items-center justify-center shadow-button"
+            >
               <span className="material-symbols-outlined text-white">arrow_forward</span>
             </button>
           </div>

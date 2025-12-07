@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
+import BarcodeScanPage from "./pages/BarcodeScanPage";
 
 // Loading spinner component
 const LoadingScreen = () => (
@@ -67,6 +68,14 @@ const AppRoutes = () => {
           <PublicRoute>
             <RegisterPage />
           </PublicRoute>
+        }
+      />
+      <Route
+        path="/scan"
+        element={
+          <ProtectedRoute>
+            <BarcodeScanPage />
+          </ProtectedRoute>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
