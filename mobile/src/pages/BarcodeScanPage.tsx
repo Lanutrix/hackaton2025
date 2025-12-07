@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import jsQR from "jsqr";
+import { saveHistory } from "../api";
 
 type BarcodeDetectorResult = { rawValue?: string; format?: string };
 type BarcodeDetectorOptions = { formats?: string[] };
@@ -71,6 +72,15 @@ const BarcodeScanPage = () => {
     }
     return { display: trimmed };
   };
+
+  const sendHistory = useCallback(async (payload: string[]) => {
+    try {
+      await saveHistory(payload);
+      console.log("[scan] history saved");
+    } catch (err) {
+      console.warn("[scan] save history failed", err);
+    }
+  }, []);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -188,6 +198,11 @@ const BarcodeScanPage = () => {
             } else {
               console.log("[scan] QR text:", decoded.display);
             }
+            if (decoded.array && decoded.array.length) {
+              void sendHistory(decoded.array);
+            } else if (decoded.display) {
+              void sendHistory([decoded.display]);
+            }
             setScanText(decoded.display);
             setIsScanning(false);
             setShowResult(true);
@@ -219,6 +234,11 @@ const BarcodeScanPage = () => {
                   console.log("[scan] QR decoded array:", decoded.array);
                 } else {
                   console.log("[scan] QR text (jsQR):", decoded.display);
+                }
+                if (decoded.array && decoded.array.length) {
+                  void sendHistory(decoded.array);
+                } else if (decoded.display) {
+                  void sendHistory([decoded.display]);
                 }
                 setScanText(decoded.display);
                 setIsScanning(false);

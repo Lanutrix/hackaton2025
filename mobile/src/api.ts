@@ -174,4 +174,17 @@ export async function checkAuth(): Promise<UserResponse> {
   return handleResponse<UserResponse>(res);
 }
 
+export async function saveHistory(items: string[]): Promise<void> {
+  const res = await authFetch(`${API_BASE}/history/save-history`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(items),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new ApiError(res.status, text || "Не удалось сохранить историю");
+  }
+}
+
 export { API_BASE };
