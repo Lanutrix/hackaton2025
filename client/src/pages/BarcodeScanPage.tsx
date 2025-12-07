@@ -211,16 +211,17 @@ const BarcodeScanPage = () => {
         <div className="flex h-full grow flex-col">
           <div className="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-5">
             <div className="flex flex-col max-w-[960px] flex-1">
-              <div className="flex justify-end gap-2 px-4 py-3">
+              <div className="flex justify-between gap-2 px-4 py-3">
                 <Button
-                  type="button"
                   onClick={() => navigate(-1)}
-                  variant="ghost"
-                  size="sm"
-                  className="p-2 text-[#111813] gap-2 hover:bg-gray-200"
+                  variant="outline"
+                  size="md"
+                  leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
                 >
-                  <span className="material-symbols-outlined">close</span>
-                  <span className="font-bold hidden sm:inline">Отмена</span>
+                  Назад
+                </Button>
+                <Button onClick={() => navigate("/landing-forest")} size="md">
+                  {"Главная"}
                 </Button>
               </div>
 
