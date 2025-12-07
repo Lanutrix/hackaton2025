@@ -129,7 +129,7 @@ const BarcodeCapturePage = () => {
 
       let parsedData: ParsedData = null;
       try {
-        parsedData = await apiParseBarcode(barcode);
+        parsedData = (await apiParseBarcode(barcode)) as ParsedData;
       } catch (parseErr) {
         parsedData = null;
         console.error(parseErr);

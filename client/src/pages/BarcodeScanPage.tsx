@@ -371,7 +371,12 @@ const BarcodeScanPage = () => {
                     <div className="w-full pt-12 fade-in-up">
                       <Button
                         type="button"
-                        onClick={() => navigate("/landing-forest")}
+                        onClick={() => navigate("/qr-result", {
+                          state: {
+                            waste: waste as Record<string, unknown>,
+                            productName: productName,
+                          },
+                        })}
                         className="w-full py-4 px-6 rounded-xl bg-primary/70 text-background-dark hover:bg-primary/90"
                         size="xl"
                       >

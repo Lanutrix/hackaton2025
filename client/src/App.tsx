@@ -8,6 +8,7 @@ import AuthPage from "./pages/AuthPage";
 import RecognitionChoicePage from "./pages/RecognitionChoicePage";
 import VoiceAgentPage from "./pages/VoiceAgentPage";
 import PhotoAnalyzePage from "./pages/PhotoAnalyzePage";
+import QrResultPage from "./pages/QrResultPage";
 
 const App = () => {
   return (
@@ -22,6 +23,7 @@ const App = () => {
       <Route path="/recognition-choice" element={<RecognitionChoicePage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/voice-agent" element={<VoiceAgentPage />} />
+      <Route path="/qr-result" element={<QrResultPage />} />
       <Route path="*" element={<Navigate to="/landing-forest" replace />} />
     </Routes>
   );
