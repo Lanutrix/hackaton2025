@@ -1,4 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Public+Sans:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +17,7 @@
 
 body {
   @apply text-[#111813] bg-[#f6f8f6] min-h-screen antialiased;
-  font-family: "Inter", "Public Sans", sans-serif;
+  font-family: "Spline Sans", "Noto Sans", "Inter", "Public Sans", sans-serif;
   margin: 0;
   padding: 0;
 }

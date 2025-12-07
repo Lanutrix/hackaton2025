@@ -1,102 +1,223 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { register, loginApi } from "../api";
+import { loginApi, register } from "../api";
 import { useAuth } from "../context/AuthContext";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [username, setUsername] = useState("");
+
+  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("Пароли не совпадают");
+      return;
+    }
+
+    const username = phone.trim();
+
+    if (!username) {
+      setError("Введите номер телефона");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Register user
       await register({ username, password });
-      // Auto-login after registration
       const token = await loginApi({ username, password });
       await login(token);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : "Не удалось зарегистрироваться");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#f6f8f6]">
-      <div className="w-full max-w-sm animate-fade-in">
-        <div className="mb-10 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#102215]">Create account</h1>
-          <p className="text-muted text-sm mt-2">Get started with a free account</p>
+    <div className="bg-[#f6f8f6] text-[#111813] min-h-screen flex flex-col font-display">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#dbe6de] bg-white/90 backdrop-blur-md px-6 py-4 md:px-10 lg:px-40">
+        <div className="flex items-center gap-4">
+          <div className="size-8 text-primary">
+            <span className="material-symbols-outlined text-3xl" aria-hidden="true">
+              recycling
+            </span>
+          </div>
+          <h2 className="text-xl font-bold leading-tight tracking-tight">ЭкоСортировка</h2>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-1.5 text-[#102215]">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              minLength={3}
-              maxLength={50}
-              placeholder="your_username"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:border-[#13ec49] focus:ring-1 focus:ring-[#13ec49] transition-colors"
-            />
-            <p className="text-xs text-muted mt-1">3-50 characters</p>
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1.5 text-[#102215]">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              maxLength={100}
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:border-[#13ec49] focus:ring-1 focus:ring-[#13ec49] transition-colors"
-            />
-            <p className="text-xs text-muted mt-1">At least 6 characters</p>
-          </div>
-
+        <div className="flex gap-3">
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#13ec49] text-[#102215] py-2.5 rounded-lg text-sm font-semibold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            type="button"
+            className="flex items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-white border border-[#dbe6de] hover:bg-gray-100 transition-colors text-sm font-bold leading-normal"
           >
-            {loading ? "Creating account..." : "Create account"}
+            <span className="truncate">Помощь</span>
           </button>
-        </form>
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            className="hidden md:flex items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-primary text-black text-sm font-bold leading-normal hover:bg-opacity-90 transition-opacity"
+          >
+            <span className="truncate">Вход</span>
+          </button>
+        </div>
+      </header>
 
-        <p className="text-center text-sm text-muted mt-6">
-          Already have an account?{" "}
-          <Link to="/login" className="text-[#13ec49] font-medium hover:underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 w-full">
+        <div className="w-full max-w-[520px] flex flex-col gap-8">
+          <div className="flex flex-col gap-2 text-center md:text-left">
+            <h1 className="text-[#111813] text-4xl md:text-5xl font-black leading-tight tracking-tight">
+              Регистрация
+            </h1>
+            <p className="text-[#61896b] text-lg font-normal leading-normal">Создайте новый аккаунт</p>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-6 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-[#dbe6de]"
+          >
+            {error && (
+              <div
+                className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg"
+                role="alert"
+                aria-live="polite"
+              >
+                {error}
+              </div>
+            )}
+
+            <label className="flex flex-col gap-2 group">
+              <span className="text-base font-medium leading-normal">Номер телефона</span>
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-4 text-[#61896b] z-10" aria-hidden="true">
+                  call
+                </span>
+                <input
+                  className="form-input flex w-full min-w-0 resize-none overflow-hidden rounded-xl text-[#111813] bg-[#f6f8f6] border border-[#dbe6de] focus:border-primary focus:ring-1 focus:ring-primary h-14 md:h-16 pl-12 pr-4 text-lg font-normal placeholder:text-[#61896b]/60 transition-all outline-none"
+                  placeholder="8 (999) 000-00-00"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  inputMode="tel"
+                />
+              </div>
+            </label>
+
+            <label className="flex flex-col gap-2 group">
+              <span className="text-base font-medium leading-normal">ФИО</span>
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-4 text-[#61896b] z-10" aria-hidden="true">
+                  person
+                </span>
+                <input
+                  className="form-input flex w-full min-w-0 resize-none overflow-hidden rounded-xl text-[#111813] bg-[#f6f8f6] border border-[#dbe6de] focus:border-primary focus:ring-1 focus:ring-primary h-14 md:h-16 pl-12 pr-4 text-lg font-normal placeholder:text-[#61896b]/60 transition-all outline-none"
+                  placeholder="Иванов Иван Иванович"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
+                />
+              </div>
+            </label>
+
+            <label className="flex flex-col gap-2 group">
+              <span className="text-base font-medium leading-normal">Пароль</span>
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-4 text-[#61896b] z-10" aria-hidden="true">
+                  lock
+                </span>
+                <input
+                  className="form-input flex w-full min-w-0 resize-none overflow-hidden rounded-xl text-[#111813] bg-[#f6f8f6] border border-[#dbe6de] focus:border-primary focus:ring-1 focus:ring-primary h-14 md:h-16 pl-12 pr-14 text-lg font-normal placeholder:text-[#61896b]/60 transition-all outline-none"
+                  placeholder="••••••••"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-[#61896b] hover:text-primary transition-colors focus:outline-none"
+                  aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                >
+                  <span className="material-symbols-outlined" aria-hidden="true">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+            </label>
+
+            <label className="flex flex-col gap-2 group">
+              <span className="text-base font-medium leading-normal">Подтверждение пароля</span>
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-4 text-[#61896b] z-10" aria-hidden="true">
+                  lock
+                </span>
+                <input
+                  className="form-input flex w-full min-w-0 resize-none overflow-hidden rounded-xl text-[#111813] bg-[#f6f8f6] border border-[#dbe6de] focus:border-primary focus:ring-1 focus:ring-primary h-14 md:h-16 pl-12 pr-14 text-lg font-normal placeholder:text-[#61896b]/60 transition-all outline-none"
+                  placeholder="••••••••"
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((prev) => !prev)}
+                  className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-[#61896b] hover:text-primary transition-colors focus:outline-none"
+                  aria-label={showConfirm ? "Скрыть пароль" : "Показать пароль"}
+                >
+                  <span className="material-symbols-outlined" aria-hidden="true">
+                    {showConfirm ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+            </label>
+
+            <div className="flex flex-col gap-4 mt-4">
+              <button
+                className="w-full flex items-center justify-center rounded-xl h-16 bg-primary hover:bg-[#0fd642] active:scale-[0.99] transition-all text-[#102215] text-xl font-bold leading-normal tracking-wide shadow-lg shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? "Создаем аккаунт..." : "Зарегистрироваться"}
+              </button>
+              <p className="text-center text-[#61896b] text-base font-medium py-2">
+                Нажимая кнопку, вы соглашаетесь с{" "}
+                <a className="text-primary hover:underline" href="#">
+                  условиями использования
+                </a>
+              </p>
+            </div>
+          </form>
+
+          <div className="md:hidden text-center">
+            <span className="text-[#61896b]">Уже есть аккаунт? </span>
+            <Link className="text-primary font-bold hover:underline" to="/login">
+              Войти
+            </Link>
+          </div>
+        </div>
+      </main>
+
+      <div className="fixed bottom-0 left-0 w-full h-2 bg-gradient-to-r from-primary/40 via-primary to-primary/40" aria-hidden />
     </div>
   );
 };
