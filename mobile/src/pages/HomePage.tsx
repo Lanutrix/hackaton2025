@@ -20,22 +20,60 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState<string>("home");
   const [historyData, setHistoryData] = useState<unknown>(null);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [_historyError, setHistoryError] = useState<string | null>(null);
+  const [_historyLoading, setHistoryLoading] = useState(false);
 
-  const { savesCount, points } = useMemo(() => {
+  const { savesCount, points, plasticPercent, paperPercent, firstStepCompleted, ecoHeroPercent } = useMemo(() => {
+    const defaultResult = { 
+      savesCount: 0, 
+      points: 0, 
+      plasticPercent: 0, 
+      paperPercent: 0, 
+      firstStepCompleted: false, 
+      ecoHeroPercent: 0 
+    };
+    
     if (historyData && typeof historyData === "object") {
       const obj = historyData as Record<string, unknown>;
       const saves = typeof obj.saves_count === "number" ? obj.saves_count : 0;
       const total = typeof obj.total === "number" ? obj.total : 0;
+      
+      // Extract category counts for achievements
+      const plasticCount = typeof obj["Пластик"] === "number" ? obj["Пластик"] : 0;
+      const paperCount = typeof obj["Бумага"] === "number" ? obj["Бумага"] : 0;
+      
+      // Calculate kg and progress (13 units = 1 kg)
+      const plasticKg = plasticCount / 13;
+      const paperKg = paperCount / 13;
+      const plasticPct = Math.min(100, Math.round((plasticKg / 10) * 100)); // target: 10 kg
+      const paperPct = Math.min(100, Math.round((paperKg / 20) * 100)); // target: 20 kg
+      
+      // First step achievement: at least 1 save
+      const firstStep = saves >= 1;
+      
+      // Eco-hero achievement: 3 different categories used
+      const categories = ["Пластик", "Бумага", "Стекло", "Металл", "Пищевые отходы", "Смешанные отходы"];
+      const usedCategories = categories.filter(cat => {
+        const count = obj[cat];
+        return typeof count === "number" && count > 0;
+      }).length;
+      const ecoHeroPct = Math.min(100, Math.round((usedCategories / 3) * 100)); // target: 3 types
+      
       if (saves || total) {
-        return { savesCount: saves, points: total };
+        return { 
+          savesCount: saves, 
+          points: total, 
+          plasticPercent: plasticPct, 
+          paperPercent: paperPct,
+          firstStepCompleted: firstStep,
+          ecoHeroPercent: ecoHeroPct
+        };
       }
     }
     if (Array.isArray(historyData)) {
-      return { savesCount: historyData.length, points: historyData.length * 100 };
+      return { ...defaultResult, savesCount: historyData.length, points: historyData.length * 100 };
     }
-    return { savesCount: 0, points: 0 };
+    return defaultResult;
   }, [historyData]);
 
   const totalPoints = points;
@@ -200,17 +238,25 @@ const HomePage = () => {
               <div className="flex flex-col items-center">
                 <div className="relative w-20 h-20 mb-3">
                   <img
-                    className="w-full h-full object-contain"
+                    className={`w-full h-full object-contain ${!firstStepCompleted ? "grayscale opacity-50" : ""}`}
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0Qt0poXDmpwdkcxq9HRHuNgpvDntpsCYz-YnjHD2z7tbqqGSjPm_f9l34oMJ4Twh3GqaKIQ_8J4QF9KtDzenO30pI7CzADpndvTO5tWNLejg5spR__Ey9qxP73mmQVW6VDvUUyS0ElabLjWly_klAyUJMFUYuuzcRd08jQRYAhd9f0HfzNb7qAjMFe9FNYw5vCrYnJkjsOz0pVrFaI68aAHJzqrE4qXsfkifQC8T7tTlSLYbn22sKvXq05QxarbMplIRymbPfVqzx"
                     alt="Первый шаг"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec49] rounded-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-sm">check</span>
-                  </div>
+                  {firstStepCompleted ? (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec49] rounded-full flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-sm">check</span>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-lg">
+                      0%
+                    </div>
+                  )}
                 </div>
                 <p className="font-semibold text-sm text-center mb-1">Первый шаг</p>
                 <p className="text-[#5a7a63] text-xs text-center mb-2">Первая сдача отходов</p>
-                <span className="text-[#13ec49] text-xs font-semibold">Получено</span>
+                <span className={`text-xs font-semibold ${firstStepCompleted ? "text-[#13ec49]" : "text-orange-500"}`}>
+                  {firstStepCompleted ? "Получено" : "В процессе"}
+                </span>
               </div>
             </div>
 
@@ -218,17 +264,25 @@ const HomePage = () => {
               <div className="flex flex-col items-center">
                 <div className="relative w-20 h-20 mb-3">
                   <img
-                    className="w-full h-full object-contain"
+                    className={`w-full h-full object-contain ${ecoHeroPercent < 100 ? "grayscale opacity-50" : ""}`}
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvmubICnv12nn4iIq4o7U8c6epNZMVyX-1li9VHsV4KE9LMyfNXZS6jCfvadaoSvN1WUS_1VqddaVznNrv-MVGqTXij-0RM0a4elpva7a8mc0NnlQYhUhOYXxDLLHwQ-uGS4goT4EX2v81tETdzw4p6LJ2xoNRWODksNgeR0ddVUPXjftrtn66kh0aQ5CB5FIiG7mc7xpax4-hByb5AN1essZV5aURqKoe4abx1j7UzgDoTuTs1LridNHAGVa-8l7rcDj3yd0nde-9"
                     alt="Эко-герой"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec49] rounded-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-sm">check</span>
-                  </div>
+                  {ecoHeroPercent >= 100 ? (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec49] rounded-full flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-sm">check</span>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-lg">
+                      {ecoHeroPercent}%
+                    </div>
+                  )}
                 </div>
                 <p className="font-semibold text-sm text-center mb-1">Эко-герой</p>
                 <p className="text-[#5a7a63] text-xs text-center mb-2">3 типа за неделю</p>
-                <span className="text-[#13ec49] text-xs font-semibold">Получено</span>
+                <span className={`text-xs font-semibold ${ecoHeroPercent >= 100 ? "text-[#13ec49]" : "text-orange-500"}`}>
+                  {ecoHeroPercent >= 100 ? "Получено" : "В процессе"}
+                </span>
               </div>
             </div>
 
@@ -236,35 +290,51 @@ const HomePage = () => {
               <div className="flex flex-col items-center">
                 <div className="relative w-20 h-20 mb-3">
                   <img
-                    className="w-full h-full object-contain grayscale opacity-50"
+                    className={`w-full h-full object-contain ${plasticPercent < 100 ? "grayscale opacity-50" : ""}`}
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuAc4GhNPpCAYgaDe1cxQVwiYbBfF69C0z4kP4nz_i5QvIvB2mWq2EYR3lb9o5zaG56ZKPhjIzMEtYta1lZoTGVY2CUScyGisDja-Ihoot9TgRyhdnRpC8OGCEg8EF8oT1JZ2v9phLJVIkynAU84KlWsTb95_7CUS1slF72VNxUA2sHPxwbWXAg69G0eJkYnUbgRc5gGMf5NLU6XOlXNumg03nn2YyOvJ6Rz2Yzm0HXYANhCauGUKOMMnceD5-Peoj_39K2ePg6cc-cp"
                     alt="Пластик"
                   />
-                  <div className="absolute bottom-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-lg">
-                    70%
-                  </div>
+                  {plasticPercent >= 100 ? (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec49] rounded-full flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-sm">check</span>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-lg">
+                      {plasticPercent}%
+                    </div>
+                  )}
                 </div>
                 <p className="font-semibold text-sm text-center mb-1">Пластик</p>
                 <p className="text-[#5a7a63] text-xs text-center mb-2">10 кг пластика</p>
-                <span className="text-orange-500 text-xs font-semibold">В процессе</span>
+                <span className={`text-xs font-semibold ${plasticPercent >= 100 ? "text-[#13ec49]" : "text-orange-500"}`}>
+                  {plasticPercent >= 100 ? "Получено" : "В процессе"}
+                </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-4 shadow-sm relative opacity-70">
+            <div className="bg-white rounded-xl p-4 shadow-sm relative">
               <div className="flex flex-col items-center">
                 <div className="relative w-20 h-20 mb-3">
                   <img
-                    className="w-full h-full object-contain grayscale opacity-50"
+                    className={`w-full h-full object-contain ${paperPercent < 100 ? "grayscale opacity-50" : ""}`}
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIQ6nxYmbEusVWmhHIrDF1N2MnEhAqDldnVFxYM9bjIcUnVGeoiNgSzQ5pgGFNGUGMfwCpk4dCyyxLRho6cyeGmroCMnEELmAGGjiwu5J2Hw3F_iG5kLKfiPkLeqwt6dXxSJMAZrtp1Mh46ENnfshytJQBgRwRtQfInlX0pLGSphBsoXvYw4wBlRwGMZUPqINrmsvnLlmCAsmvbx1OZJveqZqMdbNrKOER1wg_9Zmodwzf2G0W4Fq79Kj2Vbf8q19hrEW_qAoeI330"
                     alt="Бумага"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-sm">lock</span>
-                  </div>
+                  {paperPercent >= 100 ? (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec49] rounded-full flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-sm">check</span>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-lg">
+                      {paperPercent}%
+                    </div>
+                  )}
                 </div>
                 <p className="font-semibold text-sm text-center mb-1">Бумага</p>
                 <p className="text-[#5a7a63] text-xs text-center mb-2">20 кг макулатуры</p>
-                <span className="text-[#5a7a63] text-xs font-semibold">Заблокировано</span>
+                <span className={`text-xs font-semibold ${paperPercent >= 100 ? "text-[#13ec49]" : "text-orange-500"}`}>
+                  {paperPercent >= 100 ? "Получено" : "В процессе"}
+                </span>
               </div>
             </div>
           </div>
