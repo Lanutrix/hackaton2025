@@ -174,6 +174,13 @@ export async function checkAuth(): Promise<UserResponse> {
   return handleResponse<UserResponse>(res);
 }
 
+export async function getHistory(): Promise<unknown> {
+  const res = await authFetch(`${API_BASE}/history`, {
+    method: "GET",
+  });
+  return handleResponse<unknown>(res);
+}
+
 export async function saveHistory(items: string[]): Promise<void> {
   const res = await authFetch(`${API_BASE}/history/save-history`, {
     method: "POST",

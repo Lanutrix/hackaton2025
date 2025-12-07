@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getHistory } from "../api";
 
 type NavItem = {
   id: string;
@@ -18,6 +19,29 @@ const navItems: NavItem[] = [
 const HomePage = () => {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState<string>("home");
+  const [historyData, setHistoryData] = useState<unknown>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const { savesCount, points } = useMemo(() => {
+    if (historyData && typeof historyData === "object") {
+      const obj = historyData as Record<string, unknown>;
+      const saves = typeof obj.saves_count === "number" ? obj.saves_count : 0;
+      const total = typeof obj.total === "number" ? obj.total : 0;
+      if (saves || total) {
+        return { savesCount: saves, points: total };
+      }
+    }
+    if (Array.isArray(historyData)) {
+      return { savesCount: historyData.length, points: historyData.length * 100 };
+    }
+    return { savesCount: 0, points: 0 };
+  }, [historyData]);
+
+  const totalPoints = points;
+  const totalKg = (totalPoints / 13).toFixed(2);
+  const levelTarget = 600;
+  const levelPercent = Math.min(100, Math.round((totalPoints / levelTarget) * 100));
 
   const handleNavClick = (item: NavItem) => {
     setActiveNav(item.id);
@@ -29,6 +53,23 @@ const HomePage = () => {
       navigate("/login"); // placeholder action
     }
   };
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const data = await getHistory();
+        setHistoryData(data);
+      } catch (err) {
+        setHistoryError(err instanceof Error ? err.message : "Не удалось загрузить историю");
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, []);
 
   return (
     <div className="font-display bg-[#f8faf8] text-[#111813] min-h-screen max-w-md mx-auto relative">
@@ -95,33 +136,38 @@ const HomePage = () => {
               >
                 eco
               </span>
-              <span className="font-bold">Уровень 5</span>
+              <span className="font-bold">Уровень 1</span>
             </div>
-            <span className="text-[#5a7a63] text-sm">4500/6000 баллов</span>
+            <span className="text-[#5a7a63] text-sm">
+              {totalPoints}/{levelTarget} баллов
+            </span>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Эко-Энтузиаст</span>
-              <span className="font-semibold">75%</span>
+              <span className="font-semibold">{levelPercent}%</span>
             </div>
             <div className="w-full h-3 bg-[#e5ece7] rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#13ec49] to-[#10b83a] rounded-full" style={{ width: "75%" }} />
+              <div
+                className="h-full bg-gradient-to-r from-[#13ec49] to-[#10b83a] rounded-full"
+                style={{ width: `${levelPercent}%` }}
+              />
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="text-center p-2">
-              <div className="text-2xl font-bold text-[#13ec49]">25</div>
+              <div className="text-2xl font-bold text-[#13ec49]">{savesCount}</div>
               <div className="text-xs text-[#5a7a63]">Сдач</div>
             </div>
             <div className="text-center p-2">
-              <div className="text-2xl font-bold text-[#13ec49]">128 кг</div>
+              <div className="text-2xl font-bold text-[#13ec49]">{totalKg} кг</div>
               <div className="text-xs text-[#5a7a63]">Отходов</div>
             </div>
             <div className="text-center p-2">
-              <div className="text-2xl font-bold text-[#13ec49]">18</div>
-              <div className="text-xs text-[#5a7a63]">Наград</div>
+              <div className="text-2xl font-bold text-[#13ec49]">{totalPoints}</div>
+              <div className="text-xs text-[#5a7a63]">Баллов</div>
             </div>
           </div>
         </section>
@@ -223,7 +269,6 @@ const HomePage = () => {
             </div>
           </div>
         </section>
-
         <section className="bg-white rounded-2xl p-5 shadow-card">
           <h3 className="text-xl font-bold mb-4">Быстрые действия</h3>
           <div className="grid grid-cols-2 gap-3">
