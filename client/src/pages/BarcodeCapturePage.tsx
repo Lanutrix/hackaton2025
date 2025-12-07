@@ -4,10 +4,14 @@ import { apiDetectBarcode, apiParseBarcode } from "../api";
 import Button from "../components/Button";
 import CameraScreen from "../components/CameraScreen";
 
+type ParsedData = Record<string, unknown> | string | null;
+
 const BarcodeCapturePage = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
+
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,33 +62,45 @@ const BarcodeCapturePage = () => {
 
   const captureFrame = async (): Promise<Blob | null> => {
     const video = videoRef.current;
+    const frame = frameRef.current;
     if (!video || !cameraReady) return null;
 
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+
     const canvas = document.createElement("canvas");
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 480;
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = vw;
+    canvas.height = vh;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
-    const context = canvas.getContext("2d");
-    if (!context) return null;
+    ctx.drawImage(video, 0, 0, vw, vh);
 
-    context.drawImage(video, 0, 0, width, height);
+    let sx = 0;
+    let sy = 0;
+    let cw = vw;
+    let ch = vh;
 
-    const overlayHeightRatio = 0.46;
-    const sideMarginRatio = 0.05;
-    const cropWidth = Math.round(width * (1 - sideMarginRatio * 2));
-    const cropHeight = Math.round(height * overlayHeightRatio);
-    const sx = Math.max(0, Math.round((width - cropWidth) / 2));
-    const sy = Math.max(0, Math.round((height - cropHeight) / 2));
+    if (frame) {
+      const videoRect = video.getBoundingClientRect();
+      const frameRect = frame.getBoundingClientRect();
+
+      const scaleX = vw / videoRect.width;
+      const scaleY = vh / videoRect.height;
+
+      sx = Math.max(0, Math.round((frameRect.left - videoRect.left) * scaleX));
+      sy = Math.max(0, Math.round((frameRect.top - videoRect.top) * scaleY));
+      cw = Math.min(vw - sx, Math.round(frameRect.width * scaleX));
+      ch = Math.min(vh - sy, Math.round(frameRect.height * scaleY));
+    }
 
     const cropCanvas = document.createElement("canvas");
-    cropCanvas.width = cropWidth;
-    cropCanvas.height = cropHeight;
+    cropCanvas.width = cw;
+    cropCanvas.height = ch;
     const cropCtx = cropCanvas.getContext("2d");
     if (!cropCtx) return null;
 
-    cropCtx.drawImage(canvas, sx, sy, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    cropCtx.drawImage(canvas, sx, sy, cw, ch, 0, 0, cw, ch);
 
     return new Promise((resolve) => {
       cropCanvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
@@ -111,9 +127,9 @@ const BarcodeCapturePage = () => {
       const { barcode } = await apiDetectBarcode(file);
       setDetected(barcode);
 
-      let parsedData: unknown | null = null;
+      let parsedData: ParsedData = null;
       try {
-        parsedData = await apiParseBarcode(barcode);
+        parsedData = (await apiParseBarcode(barcode)) as ParsedData;
       } catch (parseErr) {
         parsedData = null;
         console.error(parseErr);
@@ -135,52 +151,61 @@ const BarcodeCapturePage = () => {
       onBack={() => navigate(-1)}
       rightButtonLabel="Главная"
       onRightClick={() => navigate("/landing-forest")}
-      footer={
-        <>
-          <Button
-            type="button"
-            onClick={handleDetect}
-            disabled={!canSubmit}
-            size="lg"
-            loading={loading}
-            loadingText="Отправляем снимок..."
-          >
-            Сделать фото и отправить
-          </Button>
-        </>
-      }
+      fullScreenCamera
     >
-      <div
-        className={`relative rounded-xl overflow-hidden bg-slate-900/80 aspect-[4/3] flex items-center justify-center border-4 transition-all
-    ${loading ? "camera-loading border-emerald-400" : "border-emerald-400"}`}
-      >
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-        />
+      <div className="flex-1 flex w-full p-[4px]">
+        <div className="relative w-full">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+          />
 
-        {!cameraReady && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
-            <span className="material-symbols-outlined text-4xl">hourglass_top</span>
-            <p className="text-sm">Запускаем камеру...</p>
-          </div>
-        )}
-
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 flex flex-col">
-            <div className="flex-1 bg-black/45" />
-            <div className="relative h-[46%] mx-4">
-              <div className="absolute -left-4 top-0 bottom-0 w-4 bg-black/45" />
-              <div className="absolute -right-4 top-0 bottom-0 w-4 bg-black/45" />
-              <div className="relative h-full border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame">
-                <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
-              </div>
+          {!cameraReady && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+              <span className="material-symbols-outlined text-4xl">hourglass_top</span>
+              <p className="text-sm">Запускаем камеру...</p>
             </div>
-            <div className="flex-1 bg-black/45" />
+          )}
+
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 flex flex-col">
+              <div className="flex-1 bg-black/45" />
+              <div className="relative h-[200px] mx-4">
+                <div className="absolute -left-4 top-0 bottom-0 w-4 bg-black/45" />
+                <div className="absolute -right-4 top-0 bottom-0 w-4 bg-black/45" />
+                <div
+                  ref={frameRef}
+                  className="relative h-full border-2 border-green-400/70 overflow-hidden bg-black/10 scan-frame"
+                >
+                  <div className="absolute left-2 right-2 h-[4px] bg-green-400 scan-line" />
+                </div>
+              </div>
+              <div className="flex-1 bg-black/45" />
+            </div>
           </div>
+
+          <div className="absolute inset-x-0 bottom-6 flex justify-center">
+            <Button
+              type="button"
+              onClick={handleDetect}
+              disabled={!canSubmit}
+              size="lg"
+              loading={loading}
+              loadingText="Снимаем..."
+              leftIcon={<span className="material-symbols-outlined">photo_camera</span>}
+            >
+              Сделать фото
+            </Button>
+          </div>
+
+          {detected && !error && (
+            <div className="absolute left-4 right-4 top-4 rounded-lg bg-black/60 text-white text-sm px-3 py-2">
+              Найден штрих-код: {detected}
+            </div>
+          )}
         </div>
       </div>
     </CameraScreen>

@@ -137,50 +137,54 @@ const PhotoAnalyzePage = () => {
       onBack={() => navigate(-1)}
       rightButtonLabel="Главная"
       onRightClick={() => navigate("/landing-forest")}
+      fullScreenCamera
       footer={
-        <>
-          <Button
-            type="button"
-            onClick={handleAnalyze}
-            disabled={!cameraReady || loading}
-            size="lg"
-            loading={loading}
-            loadingText="Отправляем..."
-          >
-            Проанализировать
-          </Button>
-          {hasResult && !error && (
-            <div className="mt-2 bg-white border border-slate-200 rounded-lg p-3 text-sm text-slate-900">
-              {typeof result === "string" ? (
-                <p>{result}</p>
-              ) : (
-                <pre className="whitespace-pre-wrap break-words text-xs sm:text-sm">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
-              )}
-            </div>
-          )}
-        </>
+        hasResult && !error && (
+          <div className="mt-2 bg-white border border-slate-200 rounded-lg p-3 text-sm text-slate-900">
+            {typeof result === "string" ? (
+              <p>{result}</p>
+            ) : (
+              <pre className="whitespace-pre-wrap break-words text-xs sm:text-sm">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            )}
+          </div>
+        )
       }
     >
-      <div
-        className={`relative rounded-xl overflow-hidden bg-slate-900/80 aspect-[4/3] flex items-center justify-center border-4 transition-all
-    ${loading ? "camera-loading border-emerald-400" : "border-emerald-400"}`}
-      >
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-        />
-        {!cameraReady && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
-            <span className="material-symbols-outlined text-4xl">hourglass_top</span>
-            <p className="text-sm">Включаем камеру...</p>
+      <div className="flex-1 flex w-full p-[4px]">
+        <div className="relative w-full">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+          />
+
+          {!cameraReady && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+              <span className="material-symbols-outlined text-4xl">hourglass_top</span>
+              <p className="text-sm">Включаем камеру...</p>
+            </div>
+          )}
+
+          <div className="absolute inset-x-0 bottom-6 flex justify-center">
+            <Button
+              type="button"
+              onClick={handleAnalyze}
+              disabled={!cameraReady || loading}
+              size="lg"
+              loading={loading}
+              loadingText="Отправляем..."
+              leftIcon={<span className="material-symbols-outlined">photo_camera</span>}
+            >
+              Проанализировать
+            </Button>
           </div>
-        )}
+        </div>
       </div>
+
     </CameraScreen>
   );
 };

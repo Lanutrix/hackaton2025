@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from src.database import Base, engine
 from src.models.user import User
 from src.models.refresh_token import RefreshToken
+from src.models.history import History
 
 
 async def init_db(max_retries: int = 5, retry_delay: int = 2):

@@ -14,6 +14,7 @@ const categories: Category[] = [
   { id: "metal", label: "Металл", icon: "propane_tank" },
   { id: "paper", label: "Бумага", icon: "description" },
   { id: "plastic", label: "Пластик", icon: "water_bottle" },
+  { id: "mixed", label: "Смешанное", icon: "recycling" }
 ];
 
 const WasteCategoriesPage = () => {
@@ -31,6 +32,24 @@ const WasteCategoriesPage = () => {
   };
 
   const hasSelection = selected.size > 0;
+
+  const handleSubmit = () => {
+    if (!hasSelection) return;
+    
+    // Создаём объект waste из выбранных категорий
+    const selectedCategories = categories.filter(c => selected.has(c.id));
+    const waste: Record<string, string> = {};
+    selectedCategories.forEach(c => {
+      waste[c.id] = c.label;
+    });
+
+    navigate("/qr-result", {
+      state: {
+        waste,
+        productName: "Выбранные категории отходов"
+      }
+    });
+  };
 
   return (
     <div className="relative flex h-screen min-h-screen w-full flex-col bg-white text-black overflow-hidden font-display page-enter">
@@ -53,8 +72,7 @@ const WasteCategoriesPage = () => {
                     size="lg"
                     variant="outline"
                     className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border hover:border-gray-300 transition-all duration-200 fade-bg
-                      ${isSelected ? "!bg-[#E0FAE9] !border-green-300 selected-pop" : "bg-transparent border-gray-200"}
-                      ${category.id === "plastic" ? "col-span-2" : ""}`}
+                      ${isSelected ? "!bg-[#E0FAE9] !border-green-300 selected-pop" : "bg-transparent border-gray-200"}`}
                     data-state={isSelected ? "selected" : undefined}
                   >
                     <span
@@ -78,7 +96,7 @@ const WasteCategoriesPage = () => {
               <Button
                 className="w-full sm:w-auto flex-1 min-w-[84px] h-14 px-5 bg-primary text-[#111813] text-lg tracking-[0.015em] hover:bg-opacity-90"
                 type="button"
-                onClick={() => hasSelection && navigate("/auth")}
+                onClick={handleSubmit}
                 disabled={!hasSelection}
                 size="xl"
               >
