@@ -33,6 +33,24 @@ const WasteCategoriesPage = () => {
 
   const hasSelection = selected.size > 0;
 
+  const handleSubmit = () => {
+    if (!hasSelection) return;
+    
+    // Создаём объект waste из выбранных категорий
+    const selectedCategories = categories.filter(c => selected.has(c.id));
+    const waste: Record<string, string> = {};
+    selectedCategories.forEach(c => {
+      waste[c.id] = c.label;
+    });
+
+    navigate("/qr-result", {
+      state: {
+        waste,
+        productName: "Выбранные категории отходов"
+      }
+    });
+  };
+
   return (
     <div className="relative flex h-screen min-h-screen w-full flex-col bg-white text-black overflow-hidden font-display page-enter">
       <div className="flex h-full grow flex-col">
@@ -78,7 +96,7 @@ const WasteCategoriesPage = () => {
               <Button
                 className="w-full sm:w-auto flex-1 min-w-[84px] h-14 px-5 bg-primary text-[#111813] text-lg tracking-[0.015em] hover:bg-opacity-90"
                 type="button"
-                onClick={() => hasSelection && navigate("/auth")}
+                onClick={handleSubmit}
                 disabled={!hasSelection}
                 size="xl"
               >
