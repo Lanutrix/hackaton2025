@@ -227,7 +227,10 @@ const BarcodeScanPage = () => {
               <div className="flex-grow flex flex-col justify-center items-center p-4 space-y-12">
                 {showStep1 && (
                   <>
-                    <div className="flex flex-col items-center justify-center text-center space-y-4" id="step-1">
+                    <div
+                      className="flex flex-col items-center justify-center text-center space-y-4 fade-in-up"
+                      id="step-1"
+                    >
                       <div className="w-16 h-16 border-4 border-dashed border-primary/80 rounded-full animate-spin" />
                       <p className="text-xl text-gray-600">
                         Ищем название...
@@ -238,14 +241,13 @@ const BarcodeScanPage = () => {
                         </p>
                       )}
                     </div>
-                    <div className="w-full border-t border-dashed border-gray-300 my-8" />
+                    <div className="w-full border-t border-dashed border-gray-300 my-8 fade-in-up" />
                   </>
                 )}
-
                 {showStep2 && (
                   <>
                     <div
-                      className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6"
+                      className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6 fade-in-up"
                       id="step-2"
                     >
                       <h1 className="text-[#111813] text-4xl md:text-5xl font-black leading-tight tracking-[-0.033em]">
@@ -258,24 +260,26 @@ const BarcodeScanPage = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="w-full border-t border-dashed border-gray-300 my-8" />
+                    <div className="w-full border-t border-dashed border-gray-300 my-8 fade-in-up" />
                   </>
                 )}
+
 
                 {showStep3 && (
                   <>
                     <div
-                      className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6"
+                      className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6 fade-in-up"
                       id="step-3"
                     >
                       <h1 className="text-[#111813] text-4xl md:text-5xl font-black leading-tight tracking-[-0.033em]">
                         {currentTitle}
                       </h1>
                       <div className="w-full flex flex-col gap-3 mt-4">
-                        {wasteEntries?.map(([part, type]) => (
+                        {wasteEntries?.map(([part, type], index) => (
                           <div
                             key={part}
-                            className="flex items-center gap-4 bg-white p-4 min-h-14 justify-between rounded-xl border border-gray-200"
+                            className="flex items-center gap-4 bg-white p-4 min-h-14 justify-between rounded-xl border border-gray-200 fade-in-up"
+                            style={{ animationDelay: `${index * 80}ms` }}
                           >
                             <div className="flex items-center gap-4">
                               <div className="text-[#111813] flex items-center justify-center rounded-lg bg-[#f0f4f1] shrink-0 size-10">
@@ -295,7 +299,7 @@ const BarcodeScanPage = () => {
                         ))}
                       </div>
                       {instructionsLoading && (
-                        <div className="flex flex-col items-center justify-center text-center space-y-4 pt-6">
+                        <div className="flex flex-col items-center justify-center text-center space-y-4 pt-6 fade-in-up">
                           <div className="w-16 h-16 border-4 border-dashed border-primary/80 rounded-full animate-spin" />
                           <p className="text-xl text-gray-600">
                             Определяем инструкцию...
@@ -304,24 +308,25 @@ const BarcodeScanPage = () => {
                       )}
                     </div>
                     {!instructionsLoading && (
-                      <div className="w-full border-t border-dashed border-gray-300 my-8" />
+                      <div className="w-full border-t border-dashed border-gray-300 my-8 fade-in-up" />
                     )}
                   </>
                 )}
 
                 {showStep4 && (
                   <div
-                    className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6"
+                    className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6 fade-in-up"
                     id="step-4"
                   >
                     <h1 className="text-[#111813] text-4xl md:text-5xl font-black leading-tight tracking-[-0.033em]">
                       {currentTitle}
                     </h1>
                     <div className="w-full flex flex-col gap-3 mt-4">
-                      {wasteEntries?.map(([part, type]) => (
+                      {wasteEntries?.map(([part, type], index) => (
                         <div
                           key={part}
-                          className="flex items-center gap-4 bg-white p-4 min-h-14 justify-between rounded-xl border border-gray-200"
+                          className="flex items-center gap-4 bg-white p-4 min-h-14 justify-between rounded-xl border border-gray-200 fade-in-up"
+                          style={{ animationDelay: `${index * 80}ms` }}
                         >
                           <div className="flex items-center gap-4">
                             <div className="text-[#111813] flex items-center justify-center rounded-lg bg-[#f0f4f1] shrink-0 size-10">
@@ -341,13 +346,17 @@ const BarcodeScanPage = () => {
                       ))}
                     </div>
 
-                    <div className="w-full text-left mt-8">
+                    <div className="w-full text-left mt-8 fade-in-up">
                       <h2 className="text-[#111813] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-3 pt-5">
                         Инструкция по утилизации
                       </h2>
                       <div className="flex flex-col gap-4">
-                        {instructionSteps?.map(([step, text]) => (
-                          <div key={step} className="flex items-start gap-4">
+                        {instructionSteps?.map(([step, text], index) => (
+                          <div
+                            key={step}
+                            className="flex items-start gap-4 fade-in-up"
+                            style={{ animationDelay: `${index * 80}ms` }}
+                          >
                             <div className="flex items-center justify-center size-8 shrink-0 bg-primary/20 text-primary rounded-full font-bold">
                               {step}
                             </div>
@@ -359,7 +368,7 @@ const BarcodeScanPage = () => {
                       </div>
                     </div>
 
-                    <div className="w-full pt-12">
+                    <div className="w-full pt-12 fade-in-up">
                       <Button
                         type="button"
                         onClick={() => navigate("/landing-forest")}
@@ -372,14 +381,15 @@ const BarcodeScanPage = () => {
                   </div>
                 )}
 
+
                 {error && (
-                  <div className="w-full max-w-2xl mx-auto mt-6">
+                  <div className="w-full max-w-2xl mx-auto mt-6 fade-in-up">
                     <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left">
                       <p className="text-red-700 font-semibold mb-1">
                         Ошибка
                       </p>
                       <p className="text-red-700 text-sm">{error}</p>
-                    <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex justify-end">
                         <Button
                           type="button"
                           onClick={() => navigate(-1)}
@@ -394,6 +404,7 @@ const BarcodeScanPage = () => {
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           </div>

@@ -14,6 +14,7 @@ const categories: Category[] = [
   { id: "metal", label: "Металл", icon: "propane_tank" },
   { id: "paper", label: "Бумага", icon: "description" },
   { id: "plastic", label: "Пластик", icon: "water_bottle" },
+  { id: "mixed", label: "Смешанное", icon: "recycling" }
 ];
 
 const WasteCategoriesPage = () => {
@@ -53,8 +54,7 @@ const WasteCategoriesPage = () => {
                     size="lg"
                     variant="outline"
                     className={`h-auto min-h-0 group/item relative cursor-pointer flex flex-col items-center justify-center gap-3 p-6 border hover:border-gray-300 transition-all duration-200 fade-bg
-                      ${isSelected ? "!bg-[#E0FAE9] !border-green-300 selected-pop" : "bg-transparent border-gray-200"}
-                      ${category.id === "plastic" ? "col-span-2" : ""}`}
+                      ${isSelected ? "!bg-[#E0FAE9] !border-green-300 selected-pop" : "bg-transparent border-gray-200"}`}
                     data-state={isSelected ? "selected" : undefined}
                   >
                     <span
